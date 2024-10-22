@@ -6,6 +6,7 @@ yarn-error.log*
 
 # Production
 /build
+/dist
 
 # Misc
 .DS_Store
@@ -32,19 +33,6 @@ yarn-error.log*
 *.ntvs*
 *.njsproj
 *.sln
-
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-*.env
 
 # Byte-compiled / optimized / DLL files
 *.pyc

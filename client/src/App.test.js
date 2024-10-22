@@ -1,8 +1,24 @@
-import { render, screen } from '@testing-library/react';
+import React from 'react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import App from './App';
 
-test('renders learn react link', () => {
+test('renders RAG Demo title', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const titleElement = screen.getByText(/RAG Demo/i);
+  expect(titleElement).toBeInTheDocument();
+});
+
+test('handles query submission', async () => {
+  await act(async () => {
+    render(<App />);
+    screen.debug();
+    const inputElement = await screen.getByPlaceholderText(/Ask a question/i);
+    const buttonElement = screen.getByText(/Submit/i);
+
+    fireEvent.change(inputElement, { target: { value: 'test query' } });
+    fireEvent.click(buttonElement);
+  });
+
+  const responseElement = await screen.findByText(/Response:/i);
+  expect(responseElement).toBeInTheDocument();
 });
