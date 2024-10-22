@@ -23,12 +23,15 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        working-directory: ./client
 
       - name: Run tests
         run: npm run test
+        working-directory: ./client
 
       - name: Build project
         run: npm run build
+        working-directory: ./client
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
