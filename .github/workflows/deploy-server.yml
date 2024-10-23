@@ -62,4 +62,4 @@ jobs:
               ImageTag=${{ github.sha }} \
               ClusterName=$ECS_CLUSTER \
               ServiceName=$ECS_SERVICE
-              OpenAIAPIKey=${{ secrets.OPENAI_API_KEY }}
+              OpenAIApiKey=${{ secrets.OPENAI_API_KEY }}
