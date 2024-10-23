@@ -14,6 +14,11 @@ from langchain.llms import OpenAI
 from langchain.text_splitter import CharacterTextSplitter, RecursiveCharacterTextSplitter
 from io import BytesIO
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -56,12 +61,14 @@ index = FAISS(embeddings)
 documents_metadata = {}
 
 @app.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(file: UploadFile = File(...), s3_client=Depends(get_s3_client)):
+    if not file.filename.endswith('.txt'):
+        raise HTTPException(status_code=400, detail="Invalid file format. Only .txt files are allowed.")
+    if file.spool_max_size > (2 * 1024 * 1024):  # Limit to 2MB
+        raise HTTPException(status_code=400, detail="File size exceeds the limit of 2MB.")
     try:
-        # Read file contents
         contents = await file.read()
 
-        # Asynchronously upload file to S3
         async with s3_client as s3:
             await s3.put_object(Bucket=s3_bucket_name, Key=file.filename, Body=contents)
 
@@ -92,22 +99,21 @@ async def upload_document(file: UploadFile = File(...)):
 @app.post("/rag")
 async def rag_query(query: str):
     try:
-        # Set up the retriever
         retriever = index.as_retriever()
 
-        # Set up LangChain RAG pipeline using OpenAI LLM
         qa_chain = RetrievalQA.from_chain_type(
-            llm=OpenAI(api_key=openai_api_key),
+            llm=OpenAI(api_key=settings.openai_api_key),
             chain_type="stuff",
             retriever=retriever
         )
 
-        # Get the response using RAG pipeline
         response = qa_chain.run(query)
+        logging.info(f"Query processed successfully: {query}")
         return {"response": response}
     except Exception as e:
-        logging.error(f"Error processing query: {e}")
+        logging.error(f"Error processing query '{query}': {e}")
         raise HTTPException(status_code=500, detail="Error processing query")
+
 
 async def retrieve_document_from_s3(filename: str) -> str:
     try:
