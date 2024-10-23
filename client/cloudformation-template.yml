@@ -16,7 +16,6 @@ Resources:
             Action: 's3:GetObject'
             Resource: 
               - !Sub 'arn:aws:s3:::${S3BucketName}/*'
-              - !Sub 'arn:aws:s3:::${S3BucketName}'
 
   CloudFrontDistribution:
     Type: 'AWS::CloudFront::Distribution'
