@@ -5,25 +5,6 @@ Parameters:
     Type: String
 
 Resources:
-  S3Bucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      BucketName: !Ref S3BucketName
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        IgnorePublicAcls: true
-        BlockPublicPolicy: true
-        RestrictPublicBuckets: true
-      WebsiteConfiguration:
-        IndexDocument: index.html
-        ErrorDocument: index.html
-
-  CloudFrontOAI:
-    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
-    Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment: !Sub 'OAI for ${S3BucketName}'
-
   S3BucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
     Properties:
@@ -31,8 +12,7 @@ Resources:
       PolicyDocument:
         Statement:
           - Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOAI}'
+            Principal: '*'
             Action: 's3:GetObject'
             Resource: !Sub 'arn:aws:s3:::${S3BucketName}/*'
 
@@ -42,9 +22,9 @@ Resources:
       DistributionConfig:
         Origins:
           - Id: 'S3Origin'
-            DomainName: !Sub '${S3BucketName}.s3.amazonaws.com'
+            DomainName: !Sub '${S3BucketName}.s3.${AWS::Region}.amazonaws.com'
             S3OriginConfig:
-              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOAI}'
+              OriginAccessIdentity: ''
         Enabled: true
         DefaultRootObject: 'index.html'
         DefaultCacheBehavior:
@@ -69,9 +49,9 @@ Resources:
         PriceClass: 'PriceClass_100'
 
 Outputs:
-  S3BucketName:
-    Description: 'Name of the S3 bucket'
-    Value: !Ref S3Bucket
+  CloudFrontDistributionId:
+    Description: 'ID of the CloudFront distribution'
+    Value: !Ref CloudFrontDistribution
 
   CloudFrontDistributionDomainName:
     Description: 'Domain name of the CloudFront distribution'
