@@ -14,7 +14,9 @@ Resources:
           - Effect: Allow
             Principal: '*'
             Action: 's3:GetObject'
-            Resource: !Sub '${S3BucketName}/*'
+            Resource: 
+              - !Sub 'arn:aws:s3:::${S3BucketName}/*'
+              - !Sub 'arn:aws:s3:::${S3BucketName}'
 
   CloudFrontDistribution:
     Type: 'AWS::CloudFront::Distribution'
