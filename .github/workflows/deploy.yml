@@ -45,7 +45,7 @@ jobs:
       - name: Sanitize repository name
         id: sanitize
         run: echo "::set-output name=sanitized_name::$(echo ${{ github.repository }} | tr '/' '-')"
-        - name: Wait for stack to reach a stable state
+      - name: Wait for stack to reach a stable state
         run: |
           STACK_NAME=${{ steps.sanitize.outputs.sanitized_name }}
           while true; do
@@ -65,7 +65,7 @@ jobs:
             aws cloudformation delete-stack --stack-name $STACK_NAME
             aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
           fi
-          
+
       - name: Create S3 bucket if it doesn't exist
         run: |
           BUCKET_NAME=${{ steps.sanitize.outputs.sanitized_name }}-bucket
