@@ -53,3 +53,4 @@ jobs:
             --template-file cloudformation-template.yml \
             --stack-name my-react-app \
             --capabilities CAPABILITY_NAMED_IAM
+        working-directory: ./client
