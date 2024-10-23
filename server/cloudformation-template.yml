@@ -12,6 +12,9 @@ Parameters:
   ServiceName:
     Type: String
     Description: The ECS service name
+  OpenAIApiKey:
+    Type: String
+    Description: The OpenAI API key
 
 Resources:
   ECSCluster:
@@ -45,7 +48,7 @@ Resources:
               HostPort: 8000
           Environment:
             - Name: OPENAI_API_KEY
-              Value: !Sub '${OPENAI_API_KEY}'
+              Value: !Ref OpenAIAPIKey
       ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
       TaskRoleArn: !GetAtt ECSExecutionRole.Arn
 
