@@ -12,7 +12,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     env:
-      BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+      AWS_REGION: us-east-1
 
     steps:
       - name: Checkout repository
@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '16'
 
       - name: Install dependencies
         run: npm install
@@ -40,11 +40,23 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Sanitize repository name
         id: sanitize
         run: echo "::set-output name=sanitized_name::$(echo ${{ github.repository }} | tr '/' '-')"
+
+      - name: Wait for stack to reach a stable state
+        run: |
+          STACK_NAME=${{ steps.sanitize.outputs.sanitized_name }}
+          while true; do
+            STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "STACK_DOES_NOT_EXIST")
+            if [[ "$STACK_STATUS" == "ROLLBACK_COMPLETE" || "$STACK_STATUS" == "CREATE_COMPLETE" || "$STACK_STATUS" == "UPDATE_COMPLETE" || "$STACK_STATUS" == "STACK_DOES_NOT_EXIST" ]]; then
+              break
+            fi
+            echo "Waiting for stack to reach a stable state..."
+            sleep 30
+          done
 
       - name: Delete stack if in ROLLBACK_COMPLETE state
         run: |
@@ -70,8 +82,7 @@ jobs:
       - name: Deploy CloudFormation stack
         run: |
           aws cloudformation deploy \
-            --template-file cloudformation-template.yml \
+            --template-file client/cloudformation-template.yml \
             --stack-name ${{ steps.sanitize.outputs.sanitized_name }} \
             --parameter-overrides S3BucketName=${{ steps.sanitize.outputs.sanitized_name }}-bucket \
             --capabilities CAPABILITY_NAMED_IAM
-        working-directory: ./client
