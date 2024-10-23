@@ -22,7 +22,7 @@ Resources:
       DistributionConfig:
         Origins:
           - Id: 'S3Origin'
-            DomainName: !Sub '${S3BucketName}.s3-website-${AWS::Region}.amazonaws.com'
+            DomainName: !Sub '${S3BucketName}.s3.${AWS::Region}.amazonaws.com'
             S3OriginConfig:
               OriginAccessIdentity: ''
         Enabled: true
