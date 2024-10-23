@@ -70,7 +70,15 @@ jobs:
           docker build -t $ECR_REPOSITORY:$IMAGE_TAG ./server
           docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
-
+      
+          - name: Delete stack if in ROLLBACK_FAILED state
+          run: |
+            STACK_NAME=${{ env.STACK_NAME }}
+            STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "STACK_DOES_NOT_EXIST")
+            if [ "$STACK_STATUS" == "ROLLBACK_FAILED" ]; then
+              aws cloudformation delete-stack --stack-name $STACK_NAME
+              aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
+            fi
       
       - name: Wait for stack to reach a stable state
         run: |
@@ -83,15 +91,6 @@ jobs:
             echo "Waiting for stack to reach a stable state..."
             sleep 30
           done
-  
-      - name: Delete stack if in ROLLBACK_FAILED state
-        run: |
-          STACK_NAME=${{ env.STACK_NAME }}
-          STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "STACK_DOES_NOT_EXIST")
-          if [ "$STACK_STATUS" == "ROLLBACK_FAILED" ]; then
-            aws cloudformation delete-stack --stack-name $STACK_NAME
-            aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
-          fi
 
       - name: Update CloudFormation stack
         run: |
