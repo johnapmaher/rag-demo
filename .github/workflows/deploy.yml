@@ -21,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '20'
 
       - name: Install dependencies
         run: npm install
@@ -45,8 +45,7 @@ jobs:
       - name: Sanitize repository name
         id: sanitize
         run: echo "::set-output name=sanitized_name::$(echo ${{ github.repository }} | tr '/' '-')"
-
-      - name: Wait for stack to reach a stable state
+        - name: Wait for stack to reach a stable state
         run: |
           STACK_NAME=${{ steps.sanitize.outputs.sanitized_name }}
           while true; do
@@ -66,13 +65,35 @@ jobs:
             aws cloudformation delete-stack --stack-name $STACK_NAME
             aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
           fi
-
+          
       - name: Create S3 bucket if it doesn't exist
         run: |
           BUCKET_NAME=${{ steps.sanitize.outputs.sanitized_name }}-bucket
           if aws s3 ls "s3://$BUCKET_NAME" 2>&1 | grep -q 'NoSuchBucket'; then
             aws s3 mb s3://$BUCKET_NAME
           fi
+
+      # Disable public access block configuration for the bucket
+      - name: Disable public access block
+        run: |
+          BUCKET_NAME=${{ steps.sanitize.outputs.sanitized_name }}-bucket
+          aws s3api put-public-access-block --bucket $BUCKET_NAME --public-access-block-configuration BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
+
+      # Apply a public bucket policy
+      - name: Apply public bucket policy
+        run: |
+          BUCKET_NAME=${{ steps.sanitize.outputs.sanitized_name }}-bucket
+          aws s3api put-bucket-policy --bucket $BUCKET_NAME --policy '{
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::'${BUCKET_NAME}'/*"
+              }
+            ]
+          }'
 
       - name: Upload to S3
         run: |
