@@ -48,7 +48,7 @@ Resources:
               HostPort: 8000
           Environment:
             - Name: OPENAI_API_KEY
-              Value: !Ref OpenAIAPIKey
+              Value: !Ref OpenAIApiKey
       ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
       TaskRoleArn: !GetAtt ECSExecutionRole.Arn
 
