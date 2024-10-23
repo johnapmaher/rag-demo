@@ -45,6 +45,7 @@ jobs:
       - name: Sanitize repository name
         id: sanitize
         run: echo "::set-output name=sanitized_name::$(echo ${{ github.repository }} | tr '/' '-')"
+
       - name: Wait for stack to reach a stable state
         run: |
           STACK_NAME=${{ steps.sanitize.outputs.sanitized_name }}
@@ -73,27 +74,28 @@ jobs:
             aws s3 mb s3://$BUCKET_NAME
           fi
 
-      # Disable public access block configuration for the bucket
       - name: Disable public access block
         run: |
           BUCKET_NAME=${{ steps.sanitize.outputs.sanitized_name }}-bucket
           aws s3api put-public-access-block --bucket $BUCKET_NAME --public-access-block-configuration BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
 
-      # Apply a public bucket policy
-      - name: Apply public bucket policy
+      - name: Apply public bucket policy if not exists
         run: |
           BUCKET_NAME=${{ steps.sanitize.outputs.sanitized_name }}-bucket
-          aws s3api put-bucket-policy --bucket $BUCKET_NAME --policy '{
-            "Version": "2012-10-17",
-            "Statement": [
-              {
-                "Effect": "Allow",
-                "Principal": "*",
-                "Action": "s3:GetObject",
-                "Resource": "arn:aws:s3:::'${BUCKET_NAME}'/*"
-              }
-            ]
-          }'
+          POLICY_EXISTS=$(aws s3api get-bucket-policy --bucket $BUCKET_NAME 2>&1 || echo "NoSuchBucketPolicy")
+          if [[ "$POLICY_EXISTS" == "NoSuchBucketPolicy" ]]; then
+            aws s3api put-bucket-policy --bucket $BUCKET_NAME --policy '{
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": "*",
+                  "Action": "s3:GetObject",
+                  "Resource": "arn:aws:s3:::'${BUCKET_NAME}'/*"
+                }
+              ]
+            }'
+          fi
 
       - name: Upload to S3
         run: |

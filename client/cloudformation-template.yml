@@ -5,17 +5,6 @@ Parameters:
     Type: String
 
 Resources:
-  S3BucketPolicy:
-    Type: 'AWS::S3::BucketPolicy'
-    Properties:
-      Bucket: !Ref S3BucketName
-      PolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal: '*'
-            Action: 's3:GetObject'
-            Resource: !Sub 'arn:aws:s3:::${S3BucketName}/*'
-
   CloudFrontDistribution:
     Type: 'AWS::CloudFront::Distribution'
     Properties:
