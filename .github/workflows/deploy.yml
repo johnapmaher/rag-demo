@@ -11,6 +11,9 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
+
 
     steps:
       - name: Checkout repository
@@ -55,13 +58,12 @@ jobs:
         run: |
           BUCKET_NAME=${{ steps.sanitize.outputs.sanitized_name }}-bucket
           aws s3 sync client/build/ s3://$BUCKET_NAME --delete
-        env:
-          BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
 
       - name: Deploy CloudFormation stack
         run: |
           aws cloudformation deploy \
             --template-file cloudformation-template.yml \
             --stack-name ${{ steps.sanitize.outputs.sanitized_name }} \
+            --parameter-overrides S3BucketName=${{ steps.sanitize.outputs.sanitized_name }}-bucket \
             --capabilities CAPABILITY_NAMED_IAM
         working-directory: ./client

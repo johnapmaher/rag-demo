@@ -1,24 +1,20 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-  S3Bucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      BucketName: !Sub '${AWS::StackName}-${AWS::Region}-bucket'
-      AccessControl: PublicRead
-      WebsiteConfiguration:
-        IndexDocument: index.html
-        ErrorDocument: index.html
+Parameters:
+  S3BucketName:
+    Description: 'Name of the S3 bucket to use for hosting the website'
+    Type: String
 
+Resources:
   S3BucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
     Properties:
-      Bucket: !Ref S3Bucket
+      Bucket: !Ref S3BucketName
       PolicyDocument:
         Statement:
           - Effect: Allow
             Principal: '*'
             Action: 's3:GetObject'
-            Resource: !Sub '${S3Bucket.Arn}/*'
+            Resource: !Sub '${S3BucketName}/*'
 
   CloudFrontDistribution:
     Type: 'AWS::CloudFront::Distribution'
@@ -26,7 +22,7 @@ Resources:
       DistributionConfig:
         Origins:
           - Id: 'S3Origin'
-            DomainName: !GetAtt S3Bucket.WebsiteURL
+            DomainName: !Sub '${S3BucketName}.s3-website-${AWS::Region}.amazonaws.com'
             S3OriginConfig:
               OriginAccessIdentity: ''
         Enabled: true
@@ -53,12 +49,10 @@ Resources:
         PriceClass: 'PriceClass_100'
 
 Outputs:
-  S3BucketName:
-    Description: 'Name of the S3 bucket'
-    Value: !Ref S3Bucket
   CloudFrontDistributionId:
     Description: 'ID of the CloudFront distribution'
     Value: !Ref CloudFrontDistribution
+
   CloudFrontDistributionDomainName:
     Description: 'Domain name of the CloudFront distribution'
     Value: !GetAtt CloudFrontDistribution.DomainName
