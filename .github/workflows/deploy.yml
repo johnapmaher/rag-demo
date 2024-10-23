@@ -14,7 +14,6 @@ jobs:
     env:
       BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
 
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -46,6 +45,15 @@ jobs:
       - name: Sanitize repository name
         id: sanitize
         run: echo "::set-output name=sanitized_name::$(echo ${{ github.repository }} | tr '/' '-')"
+
+      - name: Delete stack if in ROLLBACK_COMPLETE state
+        run: |
+          STACK_NAME=${{ steps.sanitize.outputs.sanitized_name }}
+          STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "STACK_DOES_NOT_EXIST")
+          if [ "$STACK_STATUS" == "ROLLBACK_COMPLETE" ]; then
+            aws cloudformation delete-stack --stack-name $STACK_NAME
+            aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
+          fi
 
       - name: Create S3 bucket if it doesn't exist
         run: |
