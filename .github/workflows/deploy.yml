@@ -34,23 +34,18 @@ jobs:
         working-directory: ./client
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Create S3 bucket if it doesn't exist
-        run: |
-          BUCKET_NAME=my-react-app-bucket-${{ github.repository }}
-          if aws s3 ls "s3://$BUCKET_NAME" 2>&1 | grep -q 'NoSuchBucket'; then
-            aws s3 mb s3://$BUCKET_NAME
-          fi
-
+      # Assuming you have a pre-existing S3 bucket set as a GitHub Secret
       - name: Upload to S3
         run: |
-          BUCKET_NAME=my-react-app-bucket-${{ github.repository }}
           aws s3 sync client/build/ s3://$BUCKET_NAME --delete
+        env:
+          BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
 
       - name: Deploy CloudFormation stack
         run: |
@@ -58,4 +53,3 @@ jobs:
             --template-file cloudformation-template.yml \
             --stack-name my-react-app \
             --capabilities CAPABILITY_NAMED_IAM
-        working-directory: ./client

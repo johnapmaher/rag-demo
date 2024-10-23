@@ -3,7 +3,7 @@ Resources:
   S3Bucket:
     Type: 'AWS::S3::Bucket'
     Properties:
-      BucketName: !Sub '${AWS::StackName}-bucket'
+      BucketName: !Sub '${AWS::StackName}-${AWS::Region}-bucket'
       AccessControl: PublicRead
       WebsiteConfiguration:
         IndexDocument: index.html
