@@ -33,12 +33,6 @@ jobs:
         run: npm run build
         working-directory: ./client
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: build
-          path: client/build/
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -46,9 +40,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Create S3 bucket if it doesn't exist
+        run: |
+          BUCKET_NAME=my-react-app-bucket-${{ github.repository }}
+          if aws s3 ls "s3://$BUCKET_NAME" 2>&1 | grep -q 'NoSuchBucket'; then
+            aws s3 mb s3://$BUCKET_NAME
+          fi
+
       - name: Upload to S3
         run: |
-          aws s3 sync client/build/ s3://your-s3-bucket-name --delete
+          BUCKET_NAME=my-react-app-bucket-${{ github.repository }}
+          aws s3 sync client/build/ s3://$BUCKET_NAME --delete
 
       - name: Deploy CloudFormation stack
         run: |
