@@ -51,6 +51,6 @@ jobs:
         run: |
           aws cloudformation deploy \
             --template-file cloudformation-template.yml \
-            --stack-name my-react-app \
+            --stack-name ${{ github.repository }} \
             --capabilities CAPABILITY_NAMED_IAM
         working-directory: ./client
