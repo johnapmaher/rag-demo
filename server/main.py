@@ -102,7 +102,7 @@ async def rag_query(query: str):
         retriever = index.as_retriever()
 
         qa_chain = RetrievalQA.from_chain_type(
-            llm=OpenAI(api_key=settings.openai_api_key),
+            llm=OpenAI(api_key=openai_api_key),
             chain_type="stuff",
             retriever=retriever
         )
