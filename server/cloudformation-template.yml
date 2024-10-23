@@ -41,8 +41,8 @@ Resources:
           Image: !Sub '${ECRRepository}:${ImageTag}'
           Essential: true
           PortMappings:
-            - ContainerPort: 80
-              HostPort: 80
+            - ContainerPort: 8000
+              HostPort: 8000
           Environment:
             - Name: OPENAI_API_KEY
               Value: !Sub '${OPENAI_API_KEY}'
