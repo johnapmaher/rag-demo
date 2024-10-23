@@ -26,6 +26,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Validate Secrets
+        run: |
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
+            echo "AWS_ACCESS_KEY_ID is empty"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "AWS_SECRET_ACCESS_KEY is empty"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_ACCOUNT_ID }}" ]; then
+            echo "AWS_ACCOUNT_ID is empty"
+            exit 1
+          fi
+          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
+            echo "OPENAI_API_KEY is empty"
+            exit 1
+          fi
+        shell: bash
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -61,5 +81,5 @@ jobs:
               ECRRepository=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY \
               ImageTag=${{ github.sha }} \
               ClusterName=$ECS_CLUSTER \
-              ServiceName=$ECS_SERVICE
+              ServiceName=$ECS_SERVICE \
               OpenAIApiKey=${{ secrets.OPENAI_API_KEY }}
