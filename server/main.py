@@ -69,8 +69,6 @@ async def upload_document(file: UploadFile = File(...), s3_client=Depends(get_s3
         text = contents.decode("utf-8")
         splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         docs = splitter.split_text(text)
-
-        # Add to the FAISS index
         index.add_texts(docs)
 
         documents_metadata[file.filename] = {
