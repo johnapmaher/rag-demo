@@ -29,6 +29,16 @@ Resources:
       ServiceName: !Ref ServiceName
       TaskDefinition: !Ref ECSTaskDefinition
       DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          Subnets:
+            - subnet-018d4c23d20205cfe
+            - subnet-06c4691a85188d142
+          SecurityGroups:
+            - sg-022dcc111a874a850                  
+          AssignPublicIp: ENABLED
+
 
   ECSTaskDefinition:
     Type: 'AWS::ECS::TaskDefinition'

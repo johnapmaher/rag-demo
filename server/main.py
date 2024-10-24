@@ -71,7 +71,7 @@ async def upload_document(file: UploadFile = File(...), s3_client=Depends(get_s3
         docs = splitter.split_text(text)
         index.add_texts(docs)
 
-        documents_metadata[file.filename] = {
+        documents_metadata[file.filename] = {   
             "num_chunks": len(docs)
         }
         return {"filename": file.filename, "message": "Document uploaded and indexed successfully"}
