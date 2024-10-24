@@ -11,7 +11,6 @@ from langchain.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from fastapi.responses import JSONResponse
-from fastapi import Depends
 
 # Set up logging with timestamp, logger name, and log level
 logging.basicConfig(
@@ -47,8 +46,9 @@ if not openai_api_key or not s3_bucket_name or not aws_access_key_id or not aws_
 # Set OpenAI API key for LangChain usage
 openai.api_key = openai_api_key
 
-# Initialize S3 client using aioboto3 for asynchronous operations
-s3_client = aioboto3.client(
+# Initialize asynchronous S3 client using aioboto3
+session = aioboto3.Session()
+s3_client = session.client(
     's3',
     aws_access_key_id=aws_access_key_id,
     aws_secret_access_key=aws_secret_access_key
@@ -66,7 +66,7 @@ async def health_check():
 
 # Endpoint to upload and process a document
 @app.post("/upload")
-async def upload_document(file: UploadFile = File(...), s3_client=Depends(get_s3_client)):
+async def upload_document(file: UploadFile = File(...)):
     # Validate file extension and size
     if not file.filename.endswith('.txt'):
         raise HTTPException(status_code=400, detail="Invalid file format. Only .txt files are allowed.")
@@ -77,7 +77,7 @@ async def upload_document(file: UploadFile = File(...), s3_client=Depends(get_s3
         # Read file contents asynchronously
         contents = await file.read()
 
-        # Upload file to S3 bucket
+        # Upload file to S3 bucket asynchronously
         async with s3_client as s3:
             await s3.put_object(Bucket=s3_bucket_name, Key=file.filename, Body=contents)
 

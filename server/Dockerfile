@@ -19,7 +19,11 @@ FROM python:3.10-slim
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy only the necessary files from the build stage
+# Copy installed Python packages from the builder stage to the final stage
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /usr/local/bin/uvicorn /usr/local/bin/uvicorn
+
+# Copy the application code from the builder stage
 COPY --from=builder /app /app
 
 # Create a non-root user and switch to it
