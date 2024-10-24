@@ -50,7 +50,7 @@ Resources:
       TargetType: ip
       Port: 8000
       Protocol: HTTP
-      VpcId: vpc-xxxxxxxxx
+      VpcId: vpc-006678b65f3f4fc0c
       HealthCheckProtocol: HTTP
       HealthCheckPort: '8000'
       HealthCheckPath: /health
