@@ -21,19 +21,19 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-# Load environment variables from .env file
 load_dotenv()
 
-# Initialize FastAPI app
 app = FastAPI()
 
-# CORS setup to allow requests from specific origin (CloudFront distribution URL)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://d3memimioruxu.cloudfront.net"],  # Replace with your actual origin
+    allow_origins=[
+        "https://d3memimioruxu.cloudfront.net",
+        "http://localhost:8000"  # Allow ECS health check endpoint
+    ],
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Validate required environment variables
