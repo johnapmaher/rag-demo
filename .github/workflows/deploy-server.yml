@@ -92,6 +92,10 @@ jobs:
             sleep 30
           done
 
+      - name: Validate CloudFormation template
+        run: |
+          aws cloudformation validate-template --template-body file://server/cloudformation-template.yml
+
       - name: Update CloudFormation stack
         run: |
           aws cloudformation deploy \
