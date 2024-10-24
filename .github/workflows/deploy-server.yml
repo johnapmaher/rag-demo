@@ -26,26 +26,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Validate Secrets
-        run: |
-          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
-            echo "AWS_ACCESS_KEY_ID is empty"
-            exit 1
-          fi
-          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
-            echo "AWS_SECRET_ACCESS_KEY is empty"
-            exit 1
-          fi
-          if [ -z "${{ secrets.AWS_ACCOUNT_ID }}" ]; then
-            echo "AWS_ACCOUNT_ID is empty"
-            exit 1
-          fi
-          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
-            echo "OPENAI_API_KEY is empty"
-            exit 1
-          fi
-        shell: bash
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -70,7 +50,16 @@ jobs:
           docker build -t $ECR_REPOSITORY:$IMAGE_TAG ./server
           docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
-      
+
+      - name: Delete stack if in ROLLBACK_COMPLETE state
+        run: |
+          STACK_NAME=${{ env.STACK_NAME }}
+          STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "STACK_DOES_NOT_EXIST")
+          if [ "$STACK_STATUS" == "ROLLBACK_COMPLETE" ]; then
+            aws cloudformation delete-stack --stack-name $STACK_NAME
+            aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
+          fi
+
       - name: Delete stack if in ROLLBACK_FAILED state
         run: |
           STACK_NAME=${{ env.STACK_NAME }}
@@ -79,7 +68,7 @@ jobs:
             aws cloudformation delete-stack --stack-name $STACK_NAME
             aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
           fi
-      
+
       - name: Force delete stack if in DELETE_FAILED state
         run: |
           STACK_NAME=${{ env.STACK_NAME }}
@@ -90,7 +79,7 @@ jobs:
             aws cloudformation delete-stack --stack-name $STACK_NAME --retain-resources $PROBLEMATIC_RESOURCES
             aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
           fi
-      
+
       - name: Wait for stack to reach a stable state
         run: |
           STACK_NAME=${{ env.STACK_NAME }}
