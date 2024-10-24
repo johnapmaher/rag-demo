@@ -42,7 +42,6 @@ if not openai_api_key or not s3_bucket_name or not aws_access_key_id or not aws_
 # Set OpenAI API key
 openai.api_key = openai_api_key
 
-# Initialize aioboto3 S3 client for async operations
 s3_client = aioboto3.client(
     's3',
     aws_access_key_id=aws_access_key_id,
@@ -52,8 +51,6 @@ s3_client = aioboto3.client(
 # LangChain setup: embedding and FAISS index
 embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
 index = FAISS(embeddings)
-
-# In-memory document store for metadata
 documents_metadata = {}
 
 @app.post("/upload")
@@ -76,7 +73,6 @@ async def upload_document(file: UploadFile = File(...), s3_client=Depends(get_s3
         # Add to the FAISS index
         index.add_texts(docs)
 
-        # Store metadata in local store
         documents_metadata[file.filename] = {
             "num_chunks": len(docs)
         }
@@ -113,7 +109,6 @@ async def rag_query(query: str):
 
 async def retrieve_document_from_s3(filename: str) -> str:
     try:
-        # Fetch the document from S3 asynchronously
         async with s3_client as s3:
             obj = await s3.get_object(Bucket=s3_bucket_name, Key=filename)
             document_content = await obj['Body'].read()
