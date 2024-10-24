@@ -22,6 +22,12 @@ Resources:
     Properties:
       ClusterName: !Ref ClusterName
 
+  LogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub '/ecs/${ServiceName}'
+      RetentionInDays: 7
+
   ECSService:
     Type: 'AWS::ECS::Service'
     Properties:
@@ -58,7 +64,7 @@ Resources:
           LogConfiguration:
             LogDriver: awslogs
             Options:
-              awslogs-group: !Sub '/ecs/${ServiceName}'
+              awslogs-group: !Ref LogGroup
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
           Environment:
