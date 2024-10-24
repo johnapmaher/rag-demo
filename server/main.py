@@ -19,10 +19,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
-# Load environment variables from .env file
 load_dotenv()
-
-# Initialize FastAPI app
 app = FastAPI()
 
 app.add_middleware(
