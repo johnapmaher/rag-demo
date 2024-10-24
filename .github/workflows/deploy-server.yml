@@ -51,32 +51,20 @@ jobs:
           docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Delete stack if in ROLLBACK_COMPLETE state
+      - name: Clean up stack state if in failed or rollback state
         run: |
           STACK_NAME=${{ env.STACK_NAME }}
           STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "STACK_DOES_NOT_EXIST")
-          if [ "$STACK_STATUS" == "ROLLBACK_COMPLETE" ]; then
-            aws cloudformation delete-stack --stack-name $STACK_NAME
-            aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
-          fi
-
-      - name: Delete stack if in ROLLBACK_FAILED state
-        run: |
-          STACK_NAME=${{ env.STACK_NAME }}
-          STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "STACK_DOES_NOT_EXIST")
-          if [ "$STACK_STATUS" == "ROLLBACK_FAILED" ]; then
-            aws cloudformation delete-stack --stack-name $STACK_NAME
-            aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
-          fi
-
-      - name: Force delete stack if in DELETE_FAILED state
-        run: |
-          STACK_NAME=${{ env.STACK_NAME }}
-          STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "STACK_DOES_NOT_EXIST")
-          if [ "$STACK_STATUS" == "DELETE_FAILED" ]; then
-            # Identify the problematic resources and retain them
-            PROBLEMATIC_RESOURCES=$(aws cloudformation describe-stack-resources --stack-name $STACK_NAME --query "StackResources[?ResourceStatus=='DELETE_FAILED'].LogicalResourceId" --output text)
-            aws cloudformation delete-stack --stack-name $STACK_NAME --retain-resources $PROBLEMATIC_RESOURCES
+          
+          if [ "$STACK_STATUS" == "ROLLBACK_COMPLETE" ] || [ "$STACK_STATUS" == "ROLLBACK_FAILED" ] || [ "$STACK_STATUS" == "DELETE_FAILED" ]; then
+            echo "Deleting stack in failed state: $STACK_STATUS"
+            if [ "$STACK_STATUS" == "DELETE_FAILED" ]; then
+              # For DELETE_FAILED state, retain problematic resources and force deletion
+              PROBLEMATIC_RESOURCES=$(aws cloudformation describe-stack-resources --stack-name $STACK_NAME --query "StackResources[?ResourceStatus=='DELETE_FAILED'].LogicalResourceId" --output text)
+                aws cloudformation delete-stack --stack-name $STACK_NAME --retain-resources $PROBLEMATIC_RESOURCES
+            else
+              aws cloudformation delete-stack --stack-name $STACK_NAME
+            fi
             aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
           fi
 

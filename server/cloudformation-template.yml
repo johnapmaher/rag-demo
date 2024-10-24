@@ -44,14 +44,14 @@ Resources:
         - Name: fastapi-container
           Image: !Sub '${ECRRepository}:${ImageTag}'
           Essential: true
-          PortMappings:
+          PortMappings: 
             - ContainerPort: 8000
               HostPort: 8000
           Environment:
             - Name: OPENAI_API_KEY
               Value: !Ref OpenAIApiKey
-      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
-      TaskRoleArn: !GetAtt ECSExecutionRole.Arn
+      ExecutionRoleArn: 'arn:aws:iam::041094237038:role/my-fastapi-app-stack-ECSExecutionRole-6HWITD9o0NAJ'
+      TaskRoleArn: 'arn:aws:iam::041094237038:role/my-fastapi-app-stack-ECSExecutionRole-6HWITD9o0NAJ'
 
   ECSExecutionRole:
     Type: 'AWS::IAM::Role'

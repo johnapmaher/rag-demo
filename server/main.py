@@ -74,7 +74,6 @@ async def upload_document(file: UploadFile = File(...), s3_client=Depends(get_s3
         documents_metadata[file.filename] = {
             "num_chunks": len(docs)
         }
-
         return {"filename": file.filename, "message": "Document uploaded and indexed successfully"}
     except NoCredentialsError:
         logging.error("AWS credentials are missing or invalid.")
