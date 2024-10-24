@@ -1,6 +1,10 @@
+aioboto3
+faiss-cpu
 fastapi
-uvicorn
-python-dotenv
 openai
 langchain
-aioboto3
+langchain-community
+langchain-openai
+python-dotenv
+python-multipart
+uvicorn

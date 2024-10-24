@@ -6,11 +6,14 @@ import logging
 import aioboto3
 from botocore.exceptions import NoCredentialsError, ClientError
 import openai
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
+from langchain_community.docstore.in_memory import InMemoryDocstore
+from langchain_community.llms import OpenAI
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from fastapi.responses import JSONResponse
+import faiss
 
 # Set up logging with timestamp, logger name, and log level
 logging.basicConfig(
@@ -47,17 +50,22 @@ if not openai_api_key or not s3_bucket_name or not aws_access_key_id or not aws_
 openai.api_key = openai_api_key
 
 # Initialize asynchronous S3 client using aioboto3
-session = aioboto3.Session()
-s3_client = session.client(
-    's3',
-    aws_access_key_id=aws_access_key_id,
-    aws_secret_access_key=aws_secret_access_key
-)
+async def get_s3_client():
+    session = aioboto3.Session()
+    return session.client(
+        's3',
+        aws_access_key_id=aws_access_key_id,
+        aws_secret_access_key=aws_secret_access_key
+    )
 
-# Initialize LangChain components: embeddings and FAISS index for RAG
-embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-index = FAISS(embeddings)
-documents_metadata = {}
+# Initialize FAISS index for document embeddings
+embedding_size = 1536  # Embedding dimension (based on OpenAI's embeddings)
+index = faiss.IndexFlatL2(embedding_size)
+docstore = InMemoryDocstore()
+index_to_docstore_id = {}
+
+# Initialize FAISS vector store
+vectorstore = FAISS(OpenAIEmbeddings(openai_api_key=openai_api_key), index, docstore, index_to_docstore_id)
 
 # Health check endpoint to ensure the API is running
 @app.get("/health")
@@ -74,10 +82,10 @@ async def upload_document(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="File size exceeds the limit of 2MB.")
     
     try:
-        # Read file contents asynchronously
         contents = await file.read()
 
         # Upload file to S3 bucket asynchronously
+        s3_client = await get_s3_client()
         async with s3_client as s3:
             await s3.put_object(Bucket=s3_bucket_name, Key=file.filename, Body=contents)
 
@@ -85,10 +93,10 @@ async def upload_document(file: UploadFile = File(...)):
         text = contents.decode("utf-8")
         splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         docs = splitter.split_text(text)
-        index.add_texts(docs)
+        vectorstore.add_texts(docs)
 
         # Store metadata about the uploaded document
-        documents_metadata[file.filename] = {   
+        documents_metadata[file.filename] = {
             "num_chunks": len(docs)
         }
 
@@ -114,7 +122,7 @@ async def upload_document(file: UploadFile = File(...)):
 async def rag_query(query: str):
     try:
         # Set up retriever from FAISS index and run RAG pipeline
-        retriever = index.as_retriever()
+        retriever = vectorstore.as_retriever()
         qa_chain = RetrievalQA.from_chain_type(
             llm=OpenAI(api_key=openai_api_key),
             chain_type="stuff",
@@ -135,6 +143,7 @@ async def rag_query(query: str):
 async def retrieve_document_from_s3(filename: str) -> str:
     try:
         # Retrieve document from S3 asynchronously
+        s3_client = await get_s3_client()
         async with s3_client as s3:
             obj = await s3.get_object(Bucket=s3_bucket_name, Key=filename)
             document_content = await obj['Body'].read()
