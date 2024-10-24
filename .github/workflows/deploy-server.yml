@@ -80,6 +80,17 @@ jobs:
             aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
           fi
       
+      - name: Force delete stack if in DELETE_FAILED state
+        run: |
+          STACK_NAME=${{ env.STACK_NAME }}
+          STACK_STATUS=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "STACK_DOES_NOT_EXIST")
+          if [ "$STACK_STATUS" == "DELETE_FAILED" ]; then
+            # Identify the problematic resources and retain them
+            PROBLEMATIC_RESOURCES=$(aws cloudformation describe-stack-resources --stack-name $STACK_NAME --query "StackResources[?ResourceStatus=='DELETE_FAILED'].LogicalResourceId" --output text)
+            aws cloudformation delete-stack --stack-name $STACK_NAME --retain-resources $PROBLEMATIC_RESOURCES
+            aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME
+          fi
+      
       - name: Wait for stack to reach a stable state
         run: |
           STACK_NAME=${{ env.STACK_NAME }}
