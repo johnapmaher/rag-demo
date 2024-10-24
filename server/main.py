@@ -14,6 +14,7 @@ from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from fastapi.responses import JSONResponse
 import faiss
+from pydantic import BaseModel
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,6 +29,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://d3memimioruxu.cloudfront.net",
+        "http://localhost:3000",
         "http://localhost:8000"  # Allow ECS health check endpoint
     ],
     allow_credentials=True,
@@ -66,6 +68,8 @@ index_to_docstore_id = {}
 # Initialize FAISS vector store
 vectorstore = FAISS(OpenAIEmbeddings(openai_api_key=openai_api_key), index, docstore, index_to_docstore_id)
 
+documents_metadata = {}
+
 # Health check endpoint to ensure the API is running
 @app.get("/health")
 async def health_check():
@@ -74,19 +78,8 @@ async def health_check():
 # Endpoint to upload and process a document
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
-    # Validate file extension and size
-    if not file.filename.endswith('.txt'):
-        raise HTTPException(status_code=400, detail="Invalid file format. Only .txt files are allowed.")
-    if file.spool_max_size > (2 * 1024 * 1024):  # Limit file size to 2MB
-        raise HTTPException(status_code=400, detail="File size exceeds the limit of 2MB.")
-    
     try:
         contents = await file.read()
-
-        # Upload file to S3 bucket asynchronously
-        s3_client = await get_s3_client()
-        async with s3_client as s3:
-            await s3.put_object(Bucket=s3_bucket_name, Key=file.filename, Body=contents)
 
         # Split file contents and add to FAISS index for RAG
         text = contents.decode("utf-8")
@@ -98,27 +91,19 @@ async def upload_document(file: UploadFile = File(...)):
         documents_metadata[file.filename] = {
             "num_chunks": len(docs)
         }
-
-        return {"filename": file.filename, "message": "Document uploaded and indexed successfully"}
     
-    # Handle AWS credential-related errors
-    except NoCredentialsError:
-        logging.error("AWS credentials are missing or invalid.")
-        raise HTTPException(status_code=500, detail="AWS credentials are missing or invalid.")
-    
-    # Handle S3 client errors
-    except ClientError as e:
-        logging.error(f"S3 Client Error: {e}")
-        raise HTTPException(status_code=500, detail="Error uploading document to S3.")
-    
-    # Handle general exceptions
+    # Handle any errors during document processing
     except Exception as e:
-        logging.error(f"General error: {e}")
-        raise HTTPException(status_code=500, detail="Error uploading document")
+        logging.error(f"Error processing document '{file.filename}': {e}")
+        raise HTTPException(status_code=500, detail="Error processing document")
 
-# Endpoint for querying with RAG (Retrieval-Augmented Generation)
+    return {"filename": file.filename, "message": "Document uploaded and indexed successfully"}
+
+class QueryRequest(BaseModel):
+    query: str
+    
 @app.post("/rag")
-async def rag_query(query: str):
+async def rag_query(request: QueryRequest):
     try:
         # Set up retriever from FAISS index and run RAG pipeline
         retriever = vectorstore.as_retriever()
@@ -128,6 +113,9 @@ async def rag_query(query: str):
             retriever=retriever
         )
 
+        # Extract query from the request body
+        query = request.query
+        
         # Run the query and return the generated response
         response = qa_chain.run(query)
         logging.info(f"Query processed successfully: {query}")

@@ -28,6 +28,47 @@ Resources:
       LogGroupName: !Sub '/ecs/${ServiceName}'
       RetentionInDays: 7
 
+  ApplicationLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties: 
+      Name: !Sub '${ServiceName}-alb'
+      Subnets:
+        - subnet-0b3b2c223bc189405
+        - subnet-06c4691a85188d142
+      SecurityGroups:
+        - sg-022dcc111a874a850
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '60'
+      Type: application
+
+  TargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      Name: !Sub '${ServiceName}-tg'
+      TargetType: ip
+      Port: 8000
+      Protocol: HTTP
+      VpcId: vpc-xxxxxxxxx
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: '8000'
+      HealthCheckPath: /health
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 5
+
+  LoadBalancerListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
   ECSService:
     Type: 'AWS::ECS::Service'
     Properties:
@@ -36,10 +77,14 @@ Resources:
       TaskDefinition: !Ref ECSTaskDefinition
       DesiredCount: 1
       LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: fastapi-container
+          ContainerPort: 8000
+          TargetGroupArn: !Ref TargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           Subnets:
-            - subnet-018d4c23d20205cfe
+            - subnet-0b3b2c223bc189405
             - subnet-06c4691a85188d142
           SecurityGroups:
             - sg-022dcc111a874a850
