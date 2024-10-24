@@ -3,4 +3,4 @@ uvicorn
 python-dotenv
 openai
 langchain
-boto3
+aioboto3
