@@ -101,7 +101,6 @@ async def upload_document(file: UploadFile = File(...)):
 class QueryRequest(BaseModel):
     query: str
     
-# Endpoint for querying with RAG (Retrieval-Augmented Generation)
 @app.post("/rag")
 async def rag_query(request: QueryRequest):
     try:
