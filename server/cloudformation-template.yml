@@ -86,6 +86,7 @@ Resources:
           TargetGroupArn: !Ref TargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
           Subnets:
             - subnet-0b3b2c223bc189405
             - subnet-06c4691a85188d142
