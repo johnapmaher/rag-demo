@@ -71,6 +71,9 @@ Resources:
 
   ECSService:
     Type: 'AWS::ECS::Service'
+    DependsOn: 
+      - LoadBalancerListener
+      - TargetGroup
     Properties:
       Cluster: !Ref ECSCluster
       ServiceName: !Ref ServiceName
