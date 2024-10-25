@@ -106,7 +106,6 @@ async def rag_query(request: QueryRequest):
     try:
         logging.info("Received request for RAG query")
 
-        # Extract query from the request body
         query = request.query
         logging.info(f"Extracted query: {query}")
 
