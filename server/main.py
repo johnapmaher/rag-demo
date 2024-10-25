@@ -37,27 +37,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Validate required environment variables
 openai_api_key = os.getenv("OPENAI_API_KEY")
-s3_bucket_name = os.getenv("S3_BUCKET_NAME")
-aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
-aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 
-# Raise an error if any of the required environment variables are missing
-if not openai_api_key or not s3_bucket_name or not aws_access_key_id or not aws_secret_access_key:
+if not openai_api_key:
     raise ValueError("Missing required environment variables.")
 
 # Set OpenAI API key for LangChain usage
 openai.api_key = openai_api_key
-
-# Initialize asynchronous S3 client using aioboto3
-async def get_s3_client():
-    session = aioboto3.Session()
-    return session.client(
-        's3',
-        aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key=aws_secret_access_key
-    )
 
 # Initialize FAISS index for document embeddings
 embedding_size = 1536  # Embedding dimension (based on OpenAI's embeddings)
@@ -147,8 +133,6 @@ async def rag_query(request: QueryRequest):
         logging.error(f"Error processing query '{query}': {e}")
         raise HTTPException(status_code=500, detail="Error processing query")
 
-# Helper function to retrieve a document from S3
-async def retrieve_document_from_s3(filename: str) -> str:
     try:
         # Retrieve document from S3 asynchronously
         s3_client = await get_s3_client()
