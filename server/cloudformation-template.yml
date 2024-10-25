@@ -67,7 +67,7 @@ Resources:
         - FARGATE
       Cpu: '256'
       Memory: '512'
-      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      ExecutionRoleArn: 'arn:aws:iam::041094237038:role/my-fastapi-app-stack-ECSExecutionRole-6HWITD9o0NAJ'
       ContainerDefinitions:
         - Name: fastapi-container
           Image: !Sub '${ECRRepository}:${ImageTag}'
