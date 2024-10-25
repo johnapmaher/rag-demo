@@ -57,7 +57,7 @@ Resources:
       Name: !Sub '${ServiceName}-tg'
       Port: 80
       Protocol: HTTP
-      VpcId: vpc-12345678  # Replace with your actual VPC ID
+      VpcId: vpc-006678b65f3f4fc0c
       TargetType: ip
       HealthCheckProtocol: HTTP
       HealthCheckPort: '8000'
