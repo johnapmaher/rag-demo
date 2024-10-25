@@ -85,6 +85,7 @@ jobs:
           aws cloudformation validate-template --template-body file://server/cloudformation-template.yml
 
       - name: Update CloudFormation stack
+        timeout-minutes: 30  # Set the timeout to 30 minutes (adjust as needed)
         run: |
           aws cloudformation deploy \
             --template-file server/cloudformation-template.yml \
