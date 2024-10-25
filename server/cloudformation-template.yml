@@ -15,6 +15,15 @@ Parameters:
   OpenAIApiKey:
     Type: String
     Description: The OpenAI API key
+  DomainName:
+    Type: String
+    Description: The domain name for the service
+  HostedZoneId:
+    Type: String
+    Description: The Route 53 Hosted Zone ID for the domain
+  CertificateArn:
+    Type: String
+    Description: The ARN of the ACM SSL certificate
 
 Resources:
   ECSCluster:
@@ -28,70 +37,26 @@ Resources:
       LogGroupName: !Sub '/ecs/${ServiceName}'
       RetentionInDays: 7
 
-  ApplicationLoadBalancer:
-    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
-    Properties: 
-      Name: !Sub '${ServiceName}-alb'
-      Subnets:
-        - subnet-0b3b2c223bc189405
-        - subnet-06c4691a85188d142
-      SecurityGroups:
-        - sg-022dcc111a874a850
-      Scheme: internet-facing
-      LoadBalancerAttributes:
-        - Key: idle_timeout.timeout_seconds
-          Value: '60'
-      Type: application
-
-  TargetGroup:
-    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
-    Properties:
-      Name: !Sub '${ServiceName}-tg'
-      TargetType: ip
-      Port: 8000
-      Protocol: HTTP
-      VpcId: vpc-006678b65f3f4fc0c
-      HealthCheckProtocol: HTTP
-      HealthCheckPort: '8000'
-      HealthCheckPath: /health
-      HealthCheckIntervalSeconds: 30
-      HealthCheckTimeoutSeconds: 5
-      HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 5
-
-  LoadBalancerListener:
-    Type: 'AWS::ElasticLoadBalancingV2::Listener'
-    Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref TargetGroup
-      LoadBalancerArn: !Ref ApplicationLoadBalancer
-      Port: 80
-      Protocol: HTTP
-
   ECSService:
     Type: 'AWS::ECS::Service'
-    DependsOn: 
-      - LoadBalancerListener
-      - TargetGroup
     Properties:
       Cluster: !Ref ECSCluster
       ServiceName: !Ref ServiceName
       TaskDefinition: !Ref ECSTaskDefinition
       DesiredCount: 1
       LaunchType: FARGATE
-      LoadBalancers:
-        - ContainerName: fastapi-container
-          ContainerPort: 8000
-          TargetGroupArn: !Ref TargetGroup
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           Subnets:
-            - subnet-0b3b2c223bc189405
+            - subnet-018d4c23d20205cfe
             - subnet-06c4691a85188d142
           SecurityGroups:
             - sg-022dcc111a874a850
+      LoadBalancers:
+        - ContainerName: fastapi-container
+          ContainerPort: 8000
+          TargetGroupArn: !Ref TargetGroup
 
   ECSTaskDefinition:
     Type: 'AWS::ECS::TaskDefinition'
@@ -102,7 +67,7 @@ Resources:
         - FARGATE
       Cpu: '256'
       Memory: '512'
-      ExecutionRoleArn: 'arn:aws:iam::041094237038:role/my-fastapi-app-stack-ECSExecutionRole-6HWITD9o0NAJ'
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
       ContainerDefinitions:
         - Name: fastapi-container
           Image: !Sub '${ECRRepository}:${ImageTag}'
@@ -119,6 +84,12 @@ Resources:
           Environment:
             - Name: OPENAI_API_KEY
               Value: !Ref OpenAIApiKey
+          HealthCheck:
+            Command: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+            Interval: 30
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 60
 
   ECSExecutionRole:
     Type: 'AWS::IAM::Role'
@@ -144,6 +115,73 @@ Resources:
                   - 'logs:PutLogEvents'
                 Resource: '*'
 
+  LoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Name: !Sub '${ServiceName}-alb'
+      Subnets:
+        - subnet-018d4c23d20205cfe
+        - subnet-06c4691a85188d142
+      SecurityGroups:
+        - sg-022dcc111a874a850
+      Scheme: internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '60'
+
+  TargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      Name: !Sub '${ServiceName}-tg'
+      Port: 80
+      Protocol: HTTP
+      VpcId: vpc-006678b65f3f4fc0c
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: '8000'
+      HealthCheckPath: '/health'
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Matcher:
+        HttpCode: '200'
+
+  HTTPListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Protocol: HTTPS
+            Port: '443'
+            StatusCode: HTTP_301
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  HTTPSListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref CertificateArn
+
+  DNSRecord:
+    Type: 'AWS::Route53::RecordSet'
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneId
+
 Outputs:
   ECSClusterName:
     Description: The name of the ECS cluster
@@ -154,3 +192,6 @@ Outputs:
   ECSTaskDefinitionArn:
     Description: The ARN of the ECS task definition
     Value: !Ref ECSTaskDefinition
+  LoadBalancerDNSName:
+    Description: The DNS name of the load balancer
+    Value: !GetAtt LoadBalancer.DNSName
