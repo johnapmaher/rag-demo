@@ -175,16 +175,6 @@ Resources:
                   - 'logs:PutLogEvents'
                 Resource: '*'
 
-  DNSRecord:
-    Type: 'AWS::Route53::RecordSet'
-    Properties:
-      HostedZoneId: !Ref HostedZoneId
-      Name: !Ref DomainName
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt LoadBalancer.DNSName
-        HostedZoneId: "Z3AADJGX6KTTL2"
-
 Outputs:
   ECSClusterName:
     Description: The name of the ECS cluster
