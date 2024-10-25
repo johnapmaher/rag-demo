@@ -176,14 +176,14 @@ Resources:
                 Resource: '*'
 
   DNSRecord:
-    Type: 'AWS::Route53::RecordSet'
-    Properties:
+  Type: 'AWS::Route53::RecordSet'
+  Properties:
+    HostedZoneId: !Ref HostedZoneId
+    Name: !Ref DomainName
+    Type: A
+    AliasTarget:
+      DNSName: !GetAtt LoadBalancer.DNSName
       HostedZoneId: !Ref HostedZoneId
-      Name: !Ref DomainName
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt LoadBalancer.DNSName
-        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneId
 
 Outputs:
   ECSClusterName:
