@@ -119,12 +119,6 @@ Resources:
           Environment:
             - Name: OPENAI_API_KEY
               Value: !Ref OpenAIApiKey
-          HealthCheck:
-            Command: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
-            Interval: 30
-            Timeout: 5
-            Retries: 3
-            StartPeriod: 60
 
   ECSExecutionRole:
     Type: 'AWS::IAM::Role'
