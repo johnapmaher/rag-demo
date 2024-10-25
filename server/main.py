@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import os
 import logging
 import aioboto3
-from botocore.exceptions import NoCredentialsError, ClientError
+from botocore.exceptions import ClientError
 import openai
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -79,20 +79,33 @@ async def health_check():
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
     try:
+        logging.info(f"Received upload request for file: {file.filename}")
+
+        # Read file contents
+        logging.info("Reading file contents")
         contents = await file.read()
 
-        # Split file contents and add to FAISS index for RAG
+        # Decode and split text for indexing
+        logging.info("Decoding file contents to text")
         text = contents.decode("utf-8")
+        
+        logging.info("Initializing RecursiveCharacterTextSplitter for text splitting")
         splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+        
+        logging.info("Splitting text into chunks")
         docs = splitter.split_text(text)
+        
+        logging.info(f"Adding {len(docs)} chunks to FAISS vectorstore")
         vectorstore.add_texts(docs)
 
         # Store metadata about the uploaded document
+        logging.info(f"Storing metadata for file: {file.filename}")
         documents_metadata[file.filename] = {
             "num_chunks": len(docs)
         }
-    
-    # Handle any errors during document processing
+
+        logging.info(f"Document '{file.filename}' uploaded and indexed successfully")
+
     except Exception as e:
         logging.error(f"Error processing document '{file.filename}': {e}")
         raise HTTPException(status_code=500, detail="Error processing document")
@@ -102,26 +115,34 @@ async def upload_document(file: UploadFile = File(...)):
 class QueryRequest(BaseModel):
     query: str
     
+# Endpoint for querying with RAG (Retrieval-Augmented Generation)
 @app.post("/rag")
 async def rag_query(request: QueryRequest):
     try:
+        logging.info("Received request for RAG query")
+
+        # Extract query from the request body
+        query = request.query
+        logging.info(f"Extracted query: {query}")
+
         # Set up retriever from FAISS index and run RAG pipeline
+        logging.info("Setting up retriever from FAISS index")
         retriever = vectorstore.as_retriever()
+
+        logging.info("Initializing RetrievalQA chain")
         qa_chain = RetrievalQA.from_chain_type(
             llm=OpenAI(api_key=openai_api_key),
             chain_type="stuff",
             retriever=retriever
         )
 
-        # Extract query from the request body
-        query = request.query
-        
         # Run the query and return the generated response
+        logging.info("Running query through the QA chain")
         response = qa_chain.run(query)
-        logging.info(f"Query processed successfully: {query}")
+        
+        logging.info(f"Query processed successfully with response: {response}")
         return {"response": response}
-    
-    # Handle any errors during query processing
+
     except Exception as e:
         logging.error(f"Error processing query '{query}': {e}")
         raise HTTPException(status_code=500, detail="Error processing query")
