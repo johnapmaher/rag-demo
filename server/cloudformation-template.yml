@@ -42,10 +42,10 @@ Resources:
     Properties:
       Name: !Sub '${ServiceName}-alb'
       Subnets:
-        - subnet-018d4c23d20205cfe  # Replace with your actual subnet IDs
-        - subnet-06c4691a85188d142  # Replace with your actual subnet IDs
+        - subnet-06c4691a85188d142
+        - subnet-018d4c23d20205cfe
       SecurityGroups:
-        - sg-022dcc111a874a850  # Replace with your actual security group ID
+        - sg-022dcc111a874a850
       Scheme: internet-facing
       LoadBalancerAttributes:
         - Key: idle_timeout.timeout_seconds
@@ -108,8 +108,8 @@ Resources:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           Subnets:
-            - subnet-018d4c23d20205cfe
             - subnet-06c4691a85188d142
+            - subnet-018d4c23d20205cfe
           SecurityGroups:
             - sg-022dcc111a874a850
       LoadBalancers:
