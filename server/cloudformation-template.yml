@@ -104,6 +104,13 @@ Resources:
       TaskDefinition: !Ref ECSTaskDefinition
       DesiredCount: 1
       LaunchType: FARGATE
+      DeploymentConfiguration:
+      DeploymentCircuitBreaker:
+        Enable: true
+        Rollback: true
+      MaximumPercent: 200
+      MinimumHealthyPercent: 100
+      HealthCheckGracePeriodSeconds: 60
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
