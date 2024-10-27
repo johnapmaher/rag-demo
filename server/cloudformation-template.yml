@@ -149,7 +149,7 @@ Resources:
             Interval: 30
             Timeout: 10
             Retries: 3
-            StartPeriod: 180
+            StartPeriod: 300
 
   ECSExecutionRole:
     Type: 'AWS::IAM::Role'
