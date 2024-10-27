@@ -191,6 +191,88 @@ Resources:
         DNSName: !GetAtt LoadBalancer.DNSName
         HostedZoneId: "Z35SXDOTRQ7X7K"
 
+  XRayDaemonTask:
+    Type: 'AWS::ECS::TaskDefinition'
+    Properties:
+      Family: !Sub '${ServiceName}-xray-daemon'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '256'
+      Memory: '512'
+      ContainerDefinitions:
+        - Name: xray-daemon
+          Image: amazon/aws-xray-daemon
+          Essential: true
+          PortMappings:
+            - ContainerPort: 2000
+              HostPort: 2000
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: xray
+
+  XRayDaemonService:
+    Type: 'AWS::ECS::Service'
+    Properties:
+      Cluster: !Ref ECSCluster
+      ServiceName: !Sub '${ServiceName}-xray-daemon'
+      TaskDefinition: !Ref XRayDaemonTask
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref Subnet1
+            - !Ref Subnet2
+          SecurityGroups:
+            - sg-022dcc111a874a850
+
+  CloudWatchDashboard:
+    Type: 'AWS::CloudWatch::Dashboard'
+    Properties:
+      DashboardName: !Sub '${ServiceName}-Dashboard'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 6,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ECS", "CPUUtilization", "ClusterName", "${ECSCluster}", "ServiceName", "${ServiceName}" ]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "ECS Service CPU Utilization"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 6,
+              "y": 0,
+              "width": 6,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ECS", "MemoryUtilization", "ClusterName", "${ECSCluster}", "ServiceName", "${ServiceName}" ]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "ECS Service Memory Utilization"
+              }
+            }
+          ]
+        }
+
 Outputs:
   ECSClusterName:
     Description: The name of the ECS cluster
