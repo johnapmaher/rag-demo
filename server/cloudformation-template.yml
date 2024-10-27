@@ -62,10 +62,10 @@ Resources:
       HealthCheckProtocol: HTTP
       HealthCheckPort: '8000'
       HealthCheckPath: '/health'
-      HealthCheckIntervalSeconds: 30
-      HealthCheckTimeoutSeconds: 5
+      HealthCheckIntervalSeconds: 60
+      HealthCheckTimeoutSeconds: 10
       HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
       Matcher:
         HttpCode: '200'
 
@@ -110,7 +110,7 @@ Resources:
         Rollback: true
       MaximumPercent: 200
       MinimumHealthyPercent: 100
-      HealthCheckGracePeriodSeconds: 60
+      HealthCheckGracePeriodSeconds: 300
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
