@@ -55,7 +55,7 @@ Resources:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
       Name: !Sub '${ServiceName}-tg'
-      Port: 80
+      Port: 8000
       Protocol: HTTP
       VpcId: vpc-006678b65f3f4fc0c
       TargetType: ip
