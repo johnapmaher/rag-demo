@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 import logging
-from botocore.exceptions import ClientError
 import openai
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -129,21 +128,3 @@ async def rag_query(request: QueryRequest):
     except Exception as e:
         logging.error(f"Error processing query '{query}': {e}")
         raise HTTPException(status_code=500, detail="Error processing query")
-
-    try:
-        # Retrieve document from S3 asynchronously
-        s3_client = await get_s3_client()
-        async with s3_client as s3:
-            obj = await s3.get_object(Bucket=s3_bucket_name, Key=filename)
-            document_content = await obj['Body'].read()
-            return document_content.decode('utf-8')
-    
-    # Handle S3 client errors
-    except ClientError as e:
-        logging.error(f"S3 Client Error: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving document from S3.")
-    
-    # Handle general exceptions
-    except Exception as e:
-        logging.error(f"General error: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving document")
