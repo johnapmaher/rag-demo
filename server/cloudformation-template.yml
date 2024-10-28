@@ -41,7 +41,7 @@ Resources:
       StageName: prod
     DependsOn: ApiGatewayMethod
 
-    VpcLink:
+  VpcLink:
     Type: 'AWS::ApiGateway::VpcLink'
     Properties:
       Name: !Sub '${ServiceName}-vpc-link'
