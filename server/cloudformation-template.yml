@@ -67,7 +67,6 @@ Resources:
         - Key: access_logs.s3.prefix
           Value: 'alb-logs'
 
-
   TargetGroup:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
@@ -122,9 +121,9 @@ Resources:
       DesiredCount: 1
       LaunchType: FARGATE
       DeploymentConfiguration:
-      DeploymentCircuitBreaker:
-        Enable: true
-        Rollback: true
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
       MaximumPercent: 200
       MinimumHealthyPercent: 100
       HealthCheckGracePeriodSeconds: 300
@@ -198,6 +197,7 @@ Resources:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                 Resource: '*'
+
   DNSRecord:
     Type: 'AWS::Route53::RecordSet'
     Properties:
@@ -207,42 +207,6 @@ Resources:
       AliasTarget:
         DNSName: !GetAtt LoadBalancer.DNSName
         HostedZoneId: "Z35SXDOTRQ7X7K"
-        {
-          "widgets": [
-            {
-              "type": "metric",
-              "x": 0,
-              "y": 0,
-              "width": 6,
-              "height": 6,
-              "properties": {
-                "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ClusterName", "${ECSCluster}", "ServiceName", "${ServiceName}" ]
-                ],
-                "period": 300,
-                "stat": "Average",
-                "region": "${AWS::Region}",
-                "title": "ECS Service CPU Utilization"
-              }
-            },
-            {
-              "type": "metric",
-              "x": 6,
-              "y": 0,
-              "width": 6,
-              "height": 6,
-              "properties": {
-                "metrics": [
-                  [ "AWS/ECS", "MemoryUtilization", "ClusterName", "${ECSCluster}", "ServiceName", "${ServiceName}" ]
-                ],
-                "period": 300,
-                "stat": "Average",
-                "region": "${AWS::Region}",
-                "title": "ECS Service Memory Utilization"
-              }
-            }
-          ]
-        }
 
 Outputs:
   ECSClusterName:
