@@ -78,6 +78,7 @@ Resources:
           Value: !Ref ALBAccessLogsBucket
         - Key: access_logs.s3.prefix
           Value: 'alb-logs'
+    DependsOn: ALBAccessLogsBucket
 
   TargetGroup:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
