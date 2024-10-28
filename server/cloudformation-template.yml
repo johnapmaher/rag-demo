@@ -59,9 +59,10 @@ Resources:
             Action: 's3:PutObject'
             Resource: !Sub 'arn:aws:s3:::${ServiceName}-alb-logs/*'
             Condition:
+              StringEquals:
+                'aws:SourceAccount': !Ref 'AWS::AccountId'
               StringLike:
                 'aws:SourceArn': !Sub 'arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/*'
-
 
 
   LoadBalancer:
