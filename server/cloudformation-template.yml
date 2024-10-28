@@ -61,7 +61,7 @@ Resources:
     Properties:
       RestApiId: !Ref ApiGateway
       ParentId: !GetAtt ApiGateway.RootResourceId
-      PathPart: 'api' # Path will be /api
+      PathPart: 'api'
   
   ApiGatewayMethod:
     Type: 'AWS::ApiGateway::Method'
@@ -75,7 +75,6 @@ Resources:
         IntegrationHttpMethod: ANY
         Uri: !Sub 'http://${LoadBalancer.DNSName}'
         ConnectionType: VPC_LINK
-        VpcLinkId: !Ref VPCLink
 
   ECSCluster:
     Type: 'AWS::ECS::Cluster'
