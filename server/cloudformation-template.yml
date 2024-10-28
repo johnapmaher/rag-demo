@@ -54,7 +54,7 @@ Resources:
         - subnet-06c4691a85188d142
         - subnet-018d4c23d20205cfe
       SecurityGroups:
-        - sg-022dcc111a874a850  # Replace with your actual security group ID
+        - sg-022dcc111a874a850
       Scheme: internet-facing
       LoadBalancerAttributes:
         - Key: idle_timeout.timeout_seconds
@@ -81,56 +81,6 @@ Resources:
       HealthCheckTimeoutSeconds: 10
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 3
-
-  CloudWatchAlarmCPU:
-    Type: 'AWS::CloudWatch::Alarm'
-    Properties:
-      AlarmName: !Sub '${ServiceName}-HighCPU'
-      MetricName: CPUUtilization
-      Namespace: AWS/ECS
-      Statistic: Average
-      Period: 60
-      EvaluationPeriods: 3
-      Threshold: 80
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: ClusterName
-          Value: !Ref ECSCluster
-        - Name: ServiceName
-          Value: !Ref ServiceName
-      AlarmActions:
-        - !Ref AlarmTopic
-
-  CloudWatchAlarmMemory:
-    Type: 'AWS::CloudWatch::Alarm'
-    Properties:
-      AlarmName: !Sub '${ServiceName}-HighMemory'
-      MetricName: MemoryUtilization
-      Namespace: AWS/ECS
-      Statistic: Average
-      Period: 60
-      EvaluationPeriods: 3
-      Threshold: 80
-      ComparisonOperator: GreaterThanThreshold
-      Dimensions:
-        - Name: ClusterName
-          Value: !Ref ECSCluster
-        - Name: ServiceName
-          Value: !Ref ServiceName
-      AlarmActions:
-        - !Ref AlarmTopic
-
-  AlarmTopic:
-    Type: 'AWS::SNS::Topic'
-    Properties:
-      TopicName: !Sub '${ServiceName}-AlarmTopic'
-
-  AlarmTopicSubscription:
-    Type: 'AWS::SNS::Subscription'
-    Properties:
-      TopicArn: !Ref AlarmTopic
-      Protocol: email
-      Endpoint: your-email@example.com  # Replace with your email
 
   CloudWatchDashboard:
     Type: 'AWS::CloudWatch::Dashboard'
@@ -237,7 +187,7 @@ Resources:
         - FARGATE
       Cpu: '256'
       Memory: '512'
-      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
+      ExecutionRoleArn: !Ref ECSExecutionRole
       ContainerDefinitions:
         - Name: fastapi-container
           Image: !Sub '${ECRRepository}:${ImageTag}'
@@ -256,10 +206,10 @@ Resources:
               Value: !Ref OpenAIApiKey
           HealthCheck:
             Command: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
-            Interval: 30
-            Timeout: 10
+            Interval: 120
+            Timeout: 30
             Retries: 3
-            StartPeriod: 300  # Increased start period to give the application more time to start
+            StartPeriod: 300
 
   ECSExecutionRole:
     Type: 'AWS::IAM::Role'
