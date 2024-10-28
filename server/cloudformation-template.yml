@@ -55,7 +55,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: 'logdelivery.elasticloadbalancing.amazonaws.com'
+              AWS: "arn:aws:iam::127311923021:root" 
             Action: 's3:PutObject'
             Resource: !Sub 'arn:aws:s3:::${ServiceName}-alb-logs/*'
             
