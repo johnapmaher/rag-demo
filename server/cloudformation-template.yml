@@ -168,8 +168,8 @@ Resources:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           Subnets:
-            - !Ref Subnet1
-            - !Ref Subnet2
+            - subnet-06c4691a85188d142
+            - subnet-018d4c23d20205cfe
           SecurityGroups:
             - sg-022dcc111a874a850
 
