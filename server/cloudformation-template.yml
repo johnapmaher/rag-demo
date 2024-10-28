@@ -26,7 +26,6 @@ Parameters:
     Description: The ARN of the ACM SSL certificate
 
 Resources:
-  Resources:
   # API Gateway
   ApiGateway:
     Type: 'AWS::ApiGateway::RestApi'
