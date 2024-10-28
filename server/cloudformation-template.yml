@@ -37,6 +37,16 @@ Resources:
       LogGroupName: !Sub '/ecs/${ServiceName}'
       RetentionInDays: 7
 
+  ALBAccessLogsBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub '${ServiceName}-alb-logs'
+      AccessControl: LogDeliveryWrite
+      LifecycleConfiguration:
+        Rules:
+          - Status: Enabled
+            ExpirationInDays: 30
+
   LoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
@@ -50,6 +60,13 @@ Resources:
       LoadBalancerAttributes:
         - Key: idle_timeout.timeout_seconds
           Value: '60'
+        - Key: access_logs.s3.enabled
+          Value: 'true'
+        - Key: access_logs.s3.bucket
+          Value: !Ref ALBAccessLogsBucket
+        - Key: access_logs.s3.prefix
+          Value: 'alb-logs'
+
 
   TargetGroup:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
@@ -190,52 +207,6 @@ Resources:
       AliasTarget:
         DNSName: !GetAtt LoadBalancer.DNSName
         HostedZoneId: "Z35SXDOTRQ7X7K"
-
-  XRayDaemonTask:
-    Type: 'AWS::ECS::TaskDefinition'
-    Properties:
-      Family: !Sub '${ServiceName}-xray-daemon'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Cpu: '256'
-      Memory: '512'
-      ContainerDefinitions:
-        - Name: xray-daemon
-          Image: amazon/aws-xray-daemon
-          Essential: true
-          PortMappings:
-            - ContainerPort: 2000
-              HostPort: 2000
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogGroup
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: xray
-
-  XRayDaemonService:
-    Type: 'AWS::ECS::Service'
-    Properties:
-      Cluster: !Ref ECSCluster
-      ServiceName: !Sub '${ServiceName}-xray-daemon'
-      TaskDefinition: !Ref XRayDaemonTask
-      DesiredCount: 1
-      LaunchType: FARGATE
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
-          Subnets:
-            - !Ref Subnet1
-            - !Ref Subnet2
-          SecurityGroups:
-            - sg-022dcc111a874a850
-
-  CloudWatchDashboard:
-    Type: 'AWS::CloudWatch::Dashboard'
-    Properties:
-      DashboardName: !Sub '${ServiceName}-Dashboard'
-      DashboardBody: !Sub |
         {
           "widgets": [
             {
