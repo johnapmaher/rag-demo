@@ -38,13 +38,13 @@ Resources:
       RetentionInDays: 7
 
   ALBAccessLogsBucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      BucketName: !Sub '${ServiceName}-alb-logs'
-      LifecycleConfiguration:
-        Rules:
-          - Status: Enabled
-            ExpirationInDays: 30
+  Type: 'AWS::S3::Bucket'
+  Properties:
+    BucketName: !Sub '${ServiceName}-alb-logs'
+    LifecycleConfiguration:
+      Rules:
+        - Status: Enabled
+          ExpirationInDays: 30
 
   LoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
@@ -131,46 +131,6 @@ Resources:
       TopicArn: !Ref AlarmTopic
       Protocol: email
       Endpoint: your-email@example.com  # Replace with your email
-
-  XRayDaemonTask:
-    Type: 'AWS::ECS::TaskDefinition'
-    Properties:
-      Family: !Sub '${ServiceName}-xray-daemon'
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      Cpu: '256'
-      Memory: '512'
-      ContainerDefinitions:
-        - Name: xray-daemon
-          Image: amazon/aws-xray-daemon
-          Essential: true
-          PortMappings:
-            - ContainerPort: 2000
-              HostPort: 2000
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref LogGroup
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: xray
-
-  XRayDaemonService:
-    Type: 'AWS::ECS::Service'
-    Properties:
-      Cluster: !Ref ECSCluster
-      ServiceName: !Sub '${ServiceName}-xray-daemon'
-      TaskDefinition: !Ref XRayDaemonTask
-      DesiredCount: 1
-      LaunchType: FARGATE
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
-          Subnets:
-            - subnet-06c4691a85188d142
-            - subnet-018d4c23d20205cfe
-          SecurityGroups:
-            - sg-022dcc111a874a850
 
   CloudWatchDashboard:
     Type: 'AWS::CloudWatch::Dashboard'
