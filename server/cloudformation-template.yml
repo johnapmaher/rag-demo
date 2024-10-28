@@ -26,6 +26,58 @@ Parameters:
     Description: The ARN of the ACM SSL certificate
 
 Resources:
+  Resources:
+  # API Gateway
+  ApiGateway:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: !Sub '${ServiceName}-api'
+      Description: 'API Gateway for ${ServiceName} ECS Service'
+  
+  ApiGatewayStage:
+    Type: 'AWS::ApiGateway::Stage'
+    Properties:
+      StageName: prod
+      RestApiId: !Ref ApiGateway
+      DeploymentId: !Ref ApiDeployment
+
+  ApiDeployment:
+    Type: 'AWS::ApiGateway::Deployment'
+    Properties:
+      RestApiId: !Ref ApiGateway
+      StageName: prod
+    DependsOn: ApiGatewayMethod
+
+  # VPC Link for API Gateway to access ALB
+  VPCLink:
+    Type: 'AWS::ApiGateway::VpcLink'
+    Properties:
+      Name: !Sub '${ServiceName}-vpc-link'
+      TargetArns:
+        - !Ref LoadBalancer
+
+  # API Gateway Resource & Method
+  ApiGatewayResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'api' # Path will be /api
+  
+  ApiGatewayMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      RestApiId: !Ref ApiGateway
+      ResourceId: !Ref ApiGatewayResource
+      HttpMethod: ANY
+      AuthorizationType: NONE
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub 'http://${LoadBalancer.DNSName}'
+        ConnectionType: VPC_LINK
+        VpcLinkId: !Ref VPCLink
+
   ECSCluster:
     Type: 'AWS::ECS::Cluster'
     Properties:
@@ -96,47 +148,6 @@ Resources:
       HealthyThresholdCount: 2
       UnhealthyThresholdCount: 3
 
-  CloudWatchDashboard:
-    Type: 'AWS::CloudWatch::Dashboard'
-    Properties:
-      DashboardName: !Sub '${ServiceName}-Dashboard'
-      DashboardBody: !Sub |
-        {
-          "widgets": [
-            {
-              "type": "metric",
-              "x": 0,
-              "y": 0,
-              "width": 6,
-              "height": 6,
-              "properties": {
-                "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ClusterName", "${ECSCluster}", "ServiceName", "${ServiceName}" ]
-                ],
-                "period": 300,
-                "stat": "Average",
-                "region": "${AWS::Region}",
-                "title": "ECS Service CPU Utilization"
-              }
-            },
-            {
-              "type": "metric",
-              "x": 6,
-              "y": 0,
-              "width": 6,
-              "height": 6,
-              "properties": {
-                "metrics": [
-                  [ "AWS/ECS", "MemoryUtilization", "ClusterName", "${ECSCluster}", "ServiceName", "${ServiceName}" ]
-                ],
-                "period": 300,
-                "stat": "Average",
-                "region": "${AWS::Region}",
-                "title": "ECS Service Memory Utilization"
-              }
-            }
-          ]
-        }
 
   HTTPListener:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
@@ -177,7 +188,7 @@ Resources:
         DeploymentCircuitBreaker:
           Enable: true
           Rollback: true
-      HealthCheckGracePeriodSeconds: 300  # Increased grace period to 5 minutes
+      HealthCheckGracePeriodSeconds: 300
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -185,7 +196,7 @@ Resources:
             - subnet-06c4691a85188d142
             - subnet-018d4c23d20205cfe
           SecurityGroups:
-            - sg-022dcc111a874a850  # Replace with your actual security group ID
+            - sg-022dcc111a874a850
       LoadBalancers:
         - ContainerName: fastapi-container
           ContainerPort: 8000
@@ -249,16 +260,10 @@ Resources:
                   - 'logs:PutLogEvents'
                 Resource: '*'
 
-  DNSRecord:
-    Type: 'AWS::Route53::RecordSet'
-    Properties:
-      HostedZoneId: !Ref HostedZoneId
-      Name: !Ref DomainName
-      Type: A
-      AliasTarget:
-        DNSName: !GetAtt LoadBalancer.DNSName
-
 Outputs:
+  ApiGatewayUrl:
+    Description: "The URL of the API Gateway"
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/api'
   ECSClusterName:
     Description: The name of the ECS cluster
     Value: !Ref ECSCluster
