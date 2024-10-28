@@ -15,12 +15,6 @@ Parameters:
   OpenAIApiKey:
     Type: String
     Description: The OpenAI API key
-  DomainName:
-    Type: String
-    Description: The domain name for the service
-  HostedZoneId:
-    Type: String
-    Description: The Route 53 Hosted Zone ID for the domain
   CertificateArn:
     Type: String
     Description: The ARN of the ACM SSL certificate
@@ -47,8 +41,7 @@ Resources:
       StageName: prod
     DependsOn: ApiGatewayMethod
 
-  # VPC Link for API Gateway to access ALB
-  VPCLink:
+    VpcLink:
     Type: 'AWS::ApiGateway::VpcLink'
     Properties:
       Name: !Sub '${ServiceName}-vpc-link'
@@ -66,15 +59,20 @@ Resources:
   ApiGatewayMethod:
     Type: 'AWS::ApiGateway::Method'
     Properties:
-      RestApiId: !Ref ApiGateway
-      ResourceId: !Ref ApiGatewayResource
-      HttpMethod: ANY
       AuthorizationType: NONE
+      HttpMethod: ANY
+      ResourceId: !Ref ApiGatewayResource
+      RestApiId: !Ref ApiGateway
       Integration:
-        Type: HTTP_PROXY
         IntegrationHttpMethod: ANY
-        Uri: !Sub 'http://${LoadBalancer.DNSName}'
+        Type: HTTP_PROXY
+        Uri: !Sub 'http://${ServiceName}-alb-${AWS::Region}.elb.amazonaws.com/{proxy}'
         ConnectionType: VPC_LINK
+        ConnectionId: !Ref VpcLink
+        IntegrationResponses:
+          - StatusCode: 200
+      MethodResponses:
+        - StatusCode: 200
 
   ECSCluster:
     Type: 'AWS::ECS::Cluster'
