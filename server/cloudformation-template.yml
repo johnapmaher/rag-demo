@@ -257,7 +257,6 @@ Resources:
       Type: A
       AliasTarget:
         DNSName: !GetAtt LoadBalancer.DNSName
-        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneId
 
 Outputs:
   ECSClusterName:
