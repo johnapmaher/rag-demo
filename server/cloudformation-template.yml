@@ -38,13 +38,13 @@ Resources:
       RetentionInDays: 7
 
   ALBAccessLogsBucket:
-  Type: 'AWS::S3::Bucket'
-  Properties:
-    BucketName: !Sub '${ServiceName}-alb-logs'
-    LifecycleConfiguration:
-      Rules:
-        - Status: Enabled
-          ExpirationInDays: 30
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub '${ServiceName}-alb-logs'
+      LifecycleConfiguration:
+        Rules:
+          - Status: Enabled
+            ExpirationInDays: 30
 
   LoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
