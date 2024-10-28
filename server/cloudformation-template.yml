@@ -41,11 +41,10 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Properties:
       BucketName: !Sub '${ServiceName}-alb-logs'
-      AccessControl: LogDeliveryWrite
       LifecycleConfiguration:
         Rules:
           - Status: Enabled
-            ExpirationInDays: 30  # Adjust as needed
+            ExpirationInDays: 30
 
   LoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
