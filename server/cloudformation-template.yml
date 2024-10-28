@@ -37,6 +37,16 @@ Resources:
       LogGroupName: !Sub '/ecs/${ServiceName}'
       RetentionInDays: 7
 
+  ALBAccessLogsBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Sub '${ServiceName}-alb-logs'
+      AccessControl: LogDeliveryWrite
+      LifecycleConfiguration:
+        Rules:
+          - Status: Enabled
+            ExpirationInDays: 30  # Adjust as needed
+
   LoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
@@ -45,11 +55,17 @@ Resources:
         - subnet-06c4691a85188d142
         - subnet-018d4c23d20205cfe
       SecurityGroups:
-        - sg-022dcc111a874a850
+        - sg-022dcc111a874a850  # Replace with your actual security group ID
       Scheme: internet-facing
       LoadBalancerAttributes:
         - Key: idle_timeout.timeout_seconds
           Value: '60'
+        - Key: access_logs.s3.enabled
+          Value: 'true'
+        - Key: access_logs.s3.bucket
+          Value: !Ref ALBAccessLogsBucket
+        - Key: access_logs.s3.prefix
+          Value: 'alb-logs'
 
   TargetGroup:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
@@ -62,39 +78,142 @@ Resources:
       HealthCheckProtocol: HTTP
       HealthCheckPort: '8000'
       HealthCheckPath: '/health'
-      HealthCheckIntervalSeconds: 120
-      HealthCheckTimeoutSeconds: 30
+      HealthCheckIntervalSeconds: 60
+      HealthCheckTimeoutSeconds: 10
       HealthyThresholdCount: 2
-      UnhealthyThresholdCount: 2
-      Matcher:
-        HttpCode: '200'
+      UnhealthyThresholdCount: 3
 
-  HTTPListener:
-    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+  CloudWatchAlarmCPU:
+    Type: 'AWS::CloudWatch::Alarm'
     Properties:
-      DefaultActions:
-        - Type: redirect
-          RedirectConfig:
-            Protocol: HTTPS
-            Port: '443'
-            StatusCode: HTTP_301
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 80
-      Protocol: HTTP
-    DependsOn: LoadBalancer
+      AlarmName: !Sub '${ServiceName}-HighCPU'
+      MetricName: CPUUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 3
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref ECSCluster
+        - Name: ServiceName
+          Value: !Ref ServiceName
+      AlarmActions:
+        - !Ref AlarmTopic
 
-  HTTPSListener:
-    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+  CloudWatchAlarmMemory:
+    Type: 'AWS::CloudWatch::Alarm'
     Properties:
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref TargetGroup
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 443
-      Protocol: HTTPS
-      Certificates:
-        - CertificateArn: !Ref CertificateArn
-    DependsOn: LoadBalancer
+      AlarmName: !Sub '${ServiceName}-HighMemory'
+      MetricName: MemoryUtilization
+      Namespace: AWS/ECS
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: 3
+      Threshold: 80
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ClusterName
+          Value: !Ref ECSCluster
+        - Name: ServiceName
+          Value: !Ref ServiceName
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  AlarmTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: !Sub '${ServiceName}-AlarmTopic'
+
+  AlarmTopicSubscription:
+    Type: 'AWS::SNS::Subscription'
+    Properties:
+      TopicArn: !Ref AlarmTopic
+      Protocol: email
+      Endpoint: your-email@example.com  # Replace with your email
+
+  XRayDaemonTask:
+    Type: 'AWS::ECS::TaskDefinition'
+    Properties:
+      Family: !Sub '${ServiceName}-xray-daemon'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: '256'
+      Memory: '512'
+      ContainerDefinitions:
+        - Name: xray-daemon
+          Image: amazon/aws-xray-daemon
+          Essential: true
+          PortMappings:
+            - ContainerPort: 2000
+              HostPort: 2000
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref LogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: xray
+
+  XRayDaemonService:
+    Type: 'AWS::ECS::Service'
+    Properties:
+      Cluster: !Ref ECSCluster
+      ServiceName: !Sub '${ServiceName}-xray-daemon'
+      TaskDefinition: !Ref XRayDaemonTask
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref Subnet1
+            - !Ref Subnet2
+          SecurityGroups:
+            - sg-022dcc111a874a850
+
+  CloudWatchDashboard:
+    Type: 'AWS::CloudWatch::Dashboard'
+    Properties:
+      DashboardName: !Sub '${ServiceName}-Dashboard'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 0,
+              "width": 6,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ECS", "CPUUtilization", "ClusterName", "${ECSCluster}", "ServiceName", "${ServiceName}" ]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "ECS Service CPU Utilization"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 6,
+              "y": 0,
+              "width": 6,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/ECS", "MemoryUtilization", "ClusterName", "${ECSCluster}", "ServiceName", "${ServiceName}" ]
+                ],
+                "period": 300,
+                "stat": "Average",
+                "region": "${AWS::Region}",
+                "title": "ECS Service Memory Utilization"
+              }
+            }
+          ]
+        }
 
   ECSService:
     Type: 'AWS::ECS::Service'
@@ -108,9 +227,7 @@ Resources:
         DeploymentCircuitBreaker:
           Enable: true
           Rollback: true
-      MaximumPercent: 200
-      MinimumHealthyPercent: 100
-      HealthCheckGracePeriodSeconds: 300
+      HealthCheckGracePeriodSeconds: 300  # Increased grace period to 5 minutes
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
@@ -118,7 +235,7 @@ Resources:
             - subnet-06c4691a85188d142
             - subnet-018d4c23d20205cfe
           SecurityGroups:
-            - sg-022dcc111a874a850
+            - sg-022dcc111a874a850  # Replace with your actual security group ID
       LoadBalancers:
         - ContainerName: fastapi-container
           ContainerPort: 8000
@@ -134,7 +251,7 @@ Resources:
         - FARGATE
       Cpu: '256'
       Memory: '512'
-      ExecutionRoleArn: 'arn:aws:iam::041094237038:role/my-fastapi-app-stack-ECSExecutionRole-6HWITD9o0NAJ'
+      ExecutionRoleArn: !GetAtt ECSExecutionRole.Arn
       ContainerDefinitions:
         - Name: fastapi-container
           Image: !Sub '${ECRRepository}:${ImageTag}'
@@ -152,11 +269,11 @@ Resources:
             - Name: OPENAI_API_KEY
               Value: !Ref OpenAIApiKey
           HealthCheck:
-            Command: ["CMD-SHELL", "curl -f http://localhost:8000 || exit 1"]
+            Command: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
             Interval: 30
             Timeout: 10
             Retries: 3
-            StartPeriod: 300
+            StartPeriod: 300  # Increased start period to give the application more time to start
 
   ECSExecutionRole:
     Type: 'AWS::IAM::Role'
@@ -190,7 +307,7 @@ Resources:
       Type: A
       AliasTarget:
         DNSName: !GetAtt LoadBalancer.DNSName
-        HostedZoneId: "Z35SXDOTRQ7X7K"
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneId
 
 Outputs:
   ECSClusterName:
