@@ -21,6 +21,8 @@ Resources:
       ProvisionedThroughput:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
 
   ApiGateway:
     Type: AWS::Serverless::Api
@@ -54,3 +56,30 @@ Resources:
             Path: /upload
             Method: post
             RestApiId: !Ref ApiGateway
+
+  DocumentIndexingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: document_indexing.handler
+      Runtime: python3.10
+      MemorySize: 512
+      Timeout: 30
+      Events:
+        DynamoDBStream:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt SessionsTable.StreamArn
+            BatchSize: 100
+            StartingPosition: TRIM_HORIZON
+      Policies:
+        - AWS::IAM::Policy:
+            PolicyName: DynamoDBStreamPolicy
+            PolicyDocument:
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - dynamodb:DescribeStream
+                    - dynamodb:GetRecords
+                    - dynamodb:GetShardIterator
+                    - dynamodb:ListStreams
+                  Resource: !GetAtt SessionsTable.StreamArn

@@ -75,7 +75,8 @@ def handler(event, context):
             )
 
         response_body = {
-            "message": f"File {file_name} uploaded successfully."
+            "message": f"File {file_name} uploaded successfully.",
+            "sessionId": session_id
         }
 
         return {

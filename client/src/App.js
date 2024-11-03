@@ -80,6 +80,7 @@ function App() {
   const [uploadMessage, setUploadMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -102,6 +103,7 @@ function App() {
 
       const data = await res.json();
       setUploadMessage(data.message);
+      setSessionId(data.sessionId);
     } catch (error) {
       setUploadMessage('Error uploading file.');
       console.error('Upload error:', error);
@@ -113,10 +115,10 @@ function App() {
   const handleQuery = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/rag', {
+      const res = await fetch(process.env.REACT_APP_QUERY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, sessionId }),
       });
       const data = await res.json();
       setResponse(data.response);
