@@ -3,7 +3,7 @@ name: Deploy Server with AWS SAM
 on:
   push:
     branches:
-      - main  # Adjust this to your deployment branch
+      - main
 
 jobs:
   build-and-deploy:
@@ -28,7 +28,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # Replace with your AWS region
+          aws-region: us-east-1
 
       - name: Validate SAM Template
         working-directory: ./server
@@ -43,7 +43,7 @@ jobs:
       - name: Deploy SAM Application
         working-directory: ./server
         env:
-          STACK_NAME: rag-app  # Replace with your stack name
+          STACK_NAME: rag-app
         run: |
           sam deploy \
             --stack-name $STACK_NAME \
@@ -51,7 +51,7 @@ jobs:
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_NAMED_IAM \
-            --region us-east-1  # Replace with your AWS region
+            --region us-east-1
 
       - name: Output Stack Outputs
         run: |

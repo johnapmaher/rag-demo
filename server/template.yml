@@ -6,6 +6,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub '${AWS::StackName}-upload-bucket-${AWS::Region}-${AWS::AccountId}'
+    DeletionPolciy: Retain
 
   SessionsTable:
     Type: AWS::DynamoDB::Table
