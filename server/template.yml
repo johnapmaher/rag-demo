@@ -60,7 +60,7 @@ Resources:
   DocumentIndexingFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: document_indexing.handler
+      Handler: app.document_indexing.handler
       Runtime: python3.10
       MemorySize: 512
       Timeout: 30
