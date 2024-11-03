@@ -22,6 +22,15 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
 
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
   UploadDocumentFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -44,3 +53,4 @@ Resources:
           Properties:
             Path: /upload
             Method: post
+            RestApiId: !Ref ApiGateway
