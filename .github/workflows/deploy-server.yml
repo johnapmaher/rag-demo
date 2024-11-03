@@ -3,7 +3,7 @@ name: Deploy Server with AWS SAM
 on:
   push:
     branches:
-      - main
+      - main  # Adjust this to your deployment branch
 
 jobs:
   build-and-deploy:
@@ -28,7 +28,12 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: us-east-1  # Replace with your AWS region
+
+      - name: Validate SAM Template
+        working-directory: ./server
+        run: |
+          sam validate
 
       - name: Build SAM Application
         working-directory: ./server
@@ -38,18 +43,19 @@ jobs:
       - name: Deploy SAM Application
         working-directory: ./server
         env:
-          STACK_NAME: rag-app
+          STACK_NAME: rag-app  # Replace with your stack name
         run: |
           sam deploy \
             --stack-name $STACK_NAME \
+            --resolve-s3 \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_NAMED_IAM \
-            --region us-east-1
+            --region us-east-1  # Replace with your AWS region
 
       - name: Output Stack Outputs
         run: |
           aws cloudformation describe-stacks \
             --stack-name rag-app \
             --query "Stacks[0].Outputs" \
-            --region us-east-1
+            --region us-east-1  # Replace with your AWS region
