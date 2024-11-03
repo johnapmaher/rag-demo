@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Deploy React app to S3
 
 on:
   push:
