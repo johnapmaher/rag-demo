@@ -8,20 +8,26 @@
 !include AWSPuml/Compute/Lambda.puml
 !include AWSPuml/Database/DynamoDB.puml
 !include AWSPuml/Storage/SimpleStorageService.puml
+!include AWSPuml/Analytics/OpenSearchService.puml
 
 left to right direction
 
 APIGateway(ragAPI, "RAG API", "API to upload and and retrieve on query")
 DynamoDB(sessionDb, "Session Database", "maintain session data")
+Lambda(indexDocument, "Index document", "return generated responses")
 Lambda(uploadDocument, "Upload document", "return sessionId")
 Lambda(queryDocument, "Query document", "return generated responses")
 SimpleStorageService(docStore, "Document Storage", "Object store for documents")
-Users(sources, "RAG demo react app", "n users")
+OpenSearchService(vectorStore, "Vector Store", "Store for vector representations")
+Users(sources, "RAG Demo React App", "n users")
 
 sources --> ragAPI
 ragAPI --> uploadDocument
 ragAPI --> queryDocument
 queryDocument --> sessionDb
+queryDocument --> vectorStore
 uploadDocument --> sessionDb
 uploadDocument --> docStore
+sessionDb --> indexDocument
+indexDocument --> vectorStore
 @enduml

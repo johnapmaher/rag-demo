@@ -72,14 +72,11 @@ Resources:
             BatchSize: 100
             StartingPosition: TRIM_HORIZON
       Policies:
-        - AWS::IAM::Policy:
-            PolicyName: DynamoDBStreamPolicy
-            PolicyDocument:
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - dynamodb:DescribeStream
-                    - dynamodb:GetRecords
-                    - dynamodb:GetShardIterator
-                    - dynamodb:ListStreams
-                  Resource: !GetAtt SessionsTable.StreamArn
+        - Statement:
+            Effect: Allow
+            Action:
+              - dynamodb:DescribeStream
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:ListStreams
+            Resource: !GetAtt SessionsTable.StreamArn
