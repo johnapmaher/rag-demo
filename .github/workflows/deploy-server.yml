@@ -97,6 +97,3 @@ jobs:
               ClusterName=$ECS_CLUSTER \
               ServiceName=$ECS_SERVICE \
               OpenAIApiKey=${{ secrets.OPENAI_API_KEY }} \
-              DomainName=${{ secrets.DOMAIN_NAME }} \
-              HostedZoneId=${{ secrets.HOSTED_ZONE_ID }} \
-              CertificateArn=${{ secrets.CERTIFICATE_ARN }}

@@ -8,13 +8,14 @@
     "@mui/material": "^6.1.5",
     "@mui/system": "^6.1.5",
     "@testing-library/user-event": "^13.5.0",
+    "dotenv": "^16.4.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-scripts": "^5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "concurrently \"react-scripts start\" \"cd ../server && uvicorn main:app --reload --host 0.0.0.0 --port 8000\"",
+    "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -40,7 +41,6 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.2",
     "@testing-library/react": "^16.0.1",
-    "concurrently": "^9.0.1",
     "eslint": "^8",
     "eslint-webpack-plugin": "^4.2.0",
     "jest-fetch-mock": "^3.0.3"

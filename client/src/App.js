@@ -92,8 +92,11 @@ function App() {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/upload', {
+      const res = await fetch(process.env.REACT_APP_UPLOAD_URL, {
         method: 'POST',
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          'file-name': file.name,},
         body: formData,
       });
 

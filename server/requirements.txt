@@ -1,9 +1,9 @@
-faiss-cpu
-fastapi
-openai
+aws-lambda-powertools
+boto3
+botocore
+fastjsonschema
 langchain
 langchain-community
 langchain-openai
+openai
 python-dotenv
-python-multipart
-uvicorn
