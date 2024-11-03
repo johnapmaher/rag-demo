@@ -1,20 +1,14 @@
-name: Build and Deploy Server
+name: Deploy Server with AWS SAM
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'server/**'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'server/**'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout source code
@@ -34,12 +28,15 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1 
+          aws-region: us-east-1
+
       - name: Build SAM Application
+        working-directory: ./server
         run: |
           sam build
 
       - name: Deploy SAM Application
+        working-directory: ./server
         env:
           STACK_NAME: rag-app
         run: |
