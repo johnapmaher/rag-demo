@@ -7,47 +7,6 @@ Resources:
     Properties:
       BucketName: !Sub '${AWS::StackName}-upload-bucket-${AWS::Region}-${AWS::AccountId}'
 
-  UploadDocumentFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: app.upload_document.handler
-      Runtime: python3.10
-      MemorySize: 512
-      Timeout: 30
-      Environment:
-        Variables:
-          S3_BUCKET_NAME: !Sub 'rag-app-upload-bucket-${AWS::Region}-${AWS::AccountId}'
-          DYNAMODB_TABLE_NAME: !Ref SessionsTable
-      Policies:
-        - S3CrudPolicy:
-            BucketName: !Ref UploadBucket
-        - PolicyName: DynamoDBCrudPolicy
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:PutItem
-                  - dynamodb:UpdateItem
-                  - dynamodb:GetItem
-                Resource: !GetAtt SessionsTable.Arn
-      Events:
-        UploadAPI:
-          Type: Api
-          Properties:
-            Path: /upload
-            Method: post
-            RestApiId: !Ref ApiGatewayRestApi
-
-  ApiGatewayRestApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: Prod
-      Cors:
-        AllowMethods: "'OPTIONS,POST'"
-        AllowHeaders: "'Content-Type, file-name'"
-        AllowOrigin: "'*'"
-
   SessionsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -62,7 +21,25 @@ Resources:
         ReadCapacityUnits: 5
         WriteCapacityUnits: 5
 
-Outputs:
-  UploadEndpoint:
-    Description: "API Gateway endpoint for Upload API"
-    Value: !Sub 'https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/upload'
+  UploadDocumentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.upload_document.handler
+      Runtime: python3.10
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref UploadBucket
+          DYNAMODB_TABLE_NAME: !Ref SessionsTable
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref UploadBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SessionsTable
+      Events:
+        UploadAPI:
+          Type: Api
+          Properties:
+            Path: /upload
+            Method: post
