@@ -41,18 +41,18 @@ jobs:
 
       - name: Deploy SAM Application
         env:
-          STACK_NAME: rag-app  # Replace with your stack name
+          STACK_NAME: rag-app
         run: |
           sam deploy \
             --stack-name $STACK_NAME \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_NAMED_IAM \
-            --region us-east-1  # Replace with your AWS region
+            --region us-east-1
 
       - name: Output Stack Outputs
         run: |
           aws cloudformation describe-stacks \
             --stack-name rag-app \
             --query "Stacks[0].Outputs" \
-            --region us-east-1  # Replace with your AWS region
+            --region us-east-1
