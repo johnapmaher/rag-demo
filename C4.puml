@@ -10,22 +10,23 @@
 
 !include AWSPuml/General/Users.puml
 !include AWSPuml/ApplicationIntegration/APIGateway.puml
-!include AWSPuml/SecurityIdentityCompliance/Cognito.puml
 !include AWSPuml/Compute/Lambda.puml
 !include AWSPuml/Database/DynamoDB.puml
+!include AWSPuml/Storage/SimpleStorageService.puml
 
 left to right direction
 
-Users(sources, "Events", "millions of users")
-APIGateway(votingAPI, "Voting API", "user votes")
-Cognito(userAuth, "User Authentication", "jwt to submit votes")
-Lambda(uploadDocument, "User Credentials", "return jwt")
-Lambda(recordVote, "Record Vote", "enter or update vote per user")
-DynamoDB(voteDb, "Vote Database", "one entry per user")
+APIGateway(ragAPI, "RAG API", "API to upload and and retrieve on query")
+DynamoDB(sessionDb, "Session Database", "maintain session data")
+Lambda(uploadDocument, "Upload document", "return sessionId")
+Lambda(queryDocument, "Query document", "return generated responses")
+SimpleStorageService(docStore, "Document Storage", "Object store for documents")
+Users(sources, "RAG demo react app", "n users")
 
-sources --> userAuth
-sources --> votingAPI
-userAuth <--> generateToken
-votingAPI --> uploadDocument
-recordVote --> voteDb
+sources --> ragAPI
+ragAPI --> uploadDocument
+ragAPI --> queryDocument
+queryDocument --> sessionDb
+uploadDocument --> sessionDb
+uploadDocument --> docStore
 @enduml
