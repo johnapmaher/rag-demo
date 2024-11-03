@@ -7,17 +7,13 @@ from aws_lambda_powertools import Logger
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
-# Load environment variables from .env file (optional for local testing)
 load_dotenv()
 
-# Initialize AWS Lambda Powertools Logger with DEBUG level
 logger = Logger(level="DEBUG")
 
-# Initialize S3 and DynamoDB clients
 s3_client = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 
-# Access the S3 bucket name from environment variables
 s3_bucket_name = os.environ.get("S3_BUCKET_NAME")
 if not s3_bucket_name:
     logger.error("S3_BUCKET_NAME environment variable is not set")

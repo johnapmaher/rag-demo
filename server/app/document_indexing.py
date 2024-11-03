@@ -1,8 +1,11 @@
 import boto3
-import logging
+from aws_lambda_powertools import Logger
 from langchain_community.vectorstores import  OpenSearchVectorSearch
 from langchain_community.embeddings import OpenAIEmbeddings
+from dotenv import load_dotenv
 import os
+
+load_dotenv()
 
 s3 = boto3.client('s3')
 logger = Logger()
