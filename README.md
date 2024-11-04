@@ -1,9 +1,9 @@
 # RAG Demo
 
-This repository showcases a full-stack application demonstrating the Retrieval-Augmented Generation (RAG) model. The application includes:
+This repository showcases a full-stack application demonstrating Retrieval-Augmented Generation (RAG). The application includes:
 
-- **Backend**: Implements the RAG model by combining retrieval-based and generation-based approaches to produce accurate and contextually relevant responses.
-- **Frontend**: Provides a web-based interface for users to interact with the RAG model, input queries, and view generated responses along with the retrieved documents.
+- **RAG pipeline architecture**: A serverless implementation of a RAG pipeline - IaC defined in the `template.yml` AWS SAM template - deployed via GitHub actions.
+- **User Interface**: Simple React application provides a web-based interface for users to interact with the system, providing document upload and document query.
 
 ## Architecture
 
