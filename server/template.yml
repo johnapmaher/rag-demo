@@ -81,6 +81,11 @@ Resources:
             Action:
               - 'aoss:APIAccessAll'
             Resource: '*'
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource: !Sub 'arn:aws:s3:::${UploadBucket}/*'
 
   IAMUSer:
     Type: 'AWS::IAM::User'
