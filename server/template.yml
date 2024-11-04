@@ -66,7 +66,7 @@ Resources:
       Timeout: 30
       Environment:
         Variables:
-          OPENSEARCH_ENDPOINT: !GetAtt OpenSearchCollection.CollectionEndpoint
+          OPENSEARCH_ENDPOINT: !GetAtt Collection.CollectionEndpoint
       Events:
         DynamoDBStream:
           Type: DynamoDB
@@ -81,62 +81,53 @@ Resources:
               - 'aoss:APIAccessAll'
             Resource: '*'
 
-  OpenSearchCollection:
-    Type: AWS::OpenSearchServerless::Collection
+  IAMUSer:
+    Type: 'AWS::IAM::User'
     Properties:
-      Name: 'vector-store'
-      Type: 'VECTORSEARCH'
-    DependsOn:
-      - OpenSearchEncryptionPolicy
+      UserName:  aossadmin
 
-  OpenSearchEncryptionPolicy:
-    Type: AWS::OpenSearchServerless::SecurityPolicy
+  DataAccessPolicy:
+    Type: 'AWS::OpenSearchServerless::AccessPolicy'
     Properties:
-      Name: 'vector-store-encryption-policy'
-      Type: 'encryption'
-      Policy: !Sub |
-        {
-          "Rules": [
-            {
-              "ResourceType": "collection",
-              "Resource": [
-                "arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/vector-store/*"
-              ],
-              "AWSOwnedKey": {}
-            }
-          ]
-        }
+      Name: quickstart-access-policy
+      Type: data
+      Description: Access policy for quickstart collection
+      Policy: !Sub >-
+        [{"Description":"Access for cfn user","Rules":[{"ResourceType":"index","Resource":["index/*/*"],"Permission":["aoss:*"]},
+        {"ResourceType":"collection","Resource":["collection/quickstart"],"Permission":["aoss:*"]}],
+        "Principal":["arn:aws:iam::${AWS::AccountId}:user/aossadmin"]}]
 
-  OpenSearchAccessPolicy:
-    Type: AWS::OpenSearchServerless::AccessPolicy
+  NetworkPolicy:
+    Type: 'AWS::OpenSearchServerless::SecurityPolicy'
     Properties:
-      Name: 'vector-store-access-policy'
-      Type: 'data'
-      Policy: !Sub |
-        {
-          "Rules": [
-            {
-              "ResourceType": "collection",
-              "Resource": [
-                "arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/vector-store/*"
-              ],
-              "Permission": [
-                "aoss:CreateCollectionItems",
-                "aoss:DeleteCollectionItems",
-                "aoss:UpdateCollectionItems",
-                "aoss:DescribeCollectionItems",
-                "aoss:VectorSearch"
-              ],
-              "Principal": [
-                {
-                  "AWS": "*"
-                }
-              ]
-            }
-          ]
-        }
+      Name: quickstart-network-policy
+      Type: network
+      Description: Network policy for quickstart collection
+      Policy: >-
+        [{"Rules":[{"ResourceType":"collection","Resource":["collection/quickstart"]}, {"ResourceType":"dashboard","Resource":["collection/quickstart"]}],"AllowFromPublic":true}]
+  
+  EncryptionPolicy:
+    Type: 'AWS::OpenSearchServerless::SecurityPolicy'
+    Properties:
+      Name: quickstart-security-policy
+      Type: encryption
+      Description: Encryption policy for quickstart collection
+      Policy: >-
+        {"Rules":[{"ResourceType":"collection","Resource":["collection/quickstart"]}],"AWSOwnedKey":true}
+  
+  Collection:
+    Type: 'AWS::OpenSearchServerless::Collection'
+    Properties:
+      Name: quickstart
+      Type: TIMESERIES
+      Description: Collection to holds timeseries data
+    DependsOn: EncryptionPolicy
 
 Outputs:
-  OpenSearchEndpoint:
-    Description: 'OpenSearch Serverless endpoint'
-    Value: !GetAtt OpenSearchCollection.CollectionEndpoint
+  IAMUser:
+    Value: !Ref IAMUSer
+  DashboardURL:
+    Value: !GetAtt Collection.DashboardEndpoint
+  CollectionARN:
+    Value: !GetAtt Collection.Arn
+
