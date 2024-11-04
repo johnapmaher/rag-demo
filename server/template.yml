@@ -86,6 +86,8 @@ Resources:
     Properties:
       Name: 'vector-store'
       Type: 'VECTORSEARCH'
+    DependsOn:
+      - OpenSearchEncryptionPolicy
 
   OpenSearchEncryptionPolicy:
     Type: AWS::OpenSearchServerless::SecurityPolicy
@@ -98,8 +100,9 @@ Resources:
             {
               "ResourceType": "collection",
               "Resource": [
-                "arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/vector-store"
-              ]
+                "arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/vector-store/*"
+              ],
+              "AWSOwnedKey": {}
             }
           ]
         }
