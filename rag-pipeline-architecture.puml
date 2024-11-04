@@ -1,4 +1,4 @@
-@startuml RAG demo container diagram
+@startuml RAG pipeline architecture
 
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
 !define AWSPuml https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v18.0/dist
@@ -21,12 +21,14 @@ SimpleStorageService(docStore, "Document Storage", "Object store for documents")
 OpenSearchService(vectorStore, "Vector Store", "Store for vector representations")
 Users(sources, "RAG Demo React App", "n users")
 Container(openAI, "OpenAI Embedding Model", "External service for generating embeddings")
+Container(openAIGen, "OpenAI Generative Model", "External service for generating answers")
 
-sources --> ragAPI
-ragAPI --> uploadDocument
-ragAPI <-- queryDocument : Retrieves answers
+sources --> ragAPI : Invokes uploadDocument or queryDocument
+ragAPI --> uploadDocument : Triggers upload workflow
+ragAPI <-- queryDocument : Retrieves document related to query and generates response using
 queryDocument --> sessionDb
 queryDocument --> vectorStore
+queryDocument --> openAIGen
 uploadDocument --> sessionDb
 uploadDocument --> docStore
 sessionDb --> indexDocument : triggered by insertion of new record

@@ -7,8 +7,7 @@ This repository showcases a full-stack application demonstrating the Retrieval-A
 
 ## Architecture
 
-The following C4 model diagram provides an overview of the architecture used in this project:
-
-![C4 Model](out/C4/RAG%20demo%20container%20diagram.svg)
+The following C4 model diagram provides an overview of the RAG pipeline architecture used in this project:
+![C4 Model](./out/rag-pipeline-architecture/RAG%20pipeline%20architecture.svg)
 
 This diagram illustrates the main components and their interactions within the system.
