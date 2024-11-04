@@ -1,8 +1,8 @@
 @startuml RAG demo container diagram
 
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
 !define AWSPuml https://raw.githubusercontent.com/awslabs/aws-icons-for-plantuml/v18.0/dist
 !include AWSPuml/AWSCommon.puml
-
 !include AWSPuml/General/Users.puml
 !include AWSPuml/ApplicationIntegration/APIGateway.puml
 !include AWSPuml/Compute/Lambda.puml
@@ -20,14 +20,18 @@ Lambda(queryDocument, "Query document", "return generated responses")
 SimpleStorageService(docStore, "Document Storage", "Object store for documents")
 OpenSearchService(vectorStore, "Vector Store", "Store for vector representations")
 Users(sources, "RAG Demo React App", "n users")
+Container(openAI, "OpenAI Embedding Model", "External service for generating embeddings")
 
 sources --> ragAPI
 ragAPI --> uploadDocument
-ragAPI --> queryDocument
+ragAPI <-- queryDocument : Retrieves answers
 queryDocument --> sessionDb
 queryDocument --> vectorStore
 uploadDocument --> sessionDb
 uploadDocument --> docStore
-sessionDb --> indexDocument
+sessionDb --> indexDocument : triggered by insertion of new record
+docStore <-- indexDocument : Retrieves document for embedding
 indexDocument --> vectorStore
+indexDocument <--> openAI : Calls OpenAI embedding model
+
 @enduml
