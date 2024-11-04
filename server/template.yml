@@ -87,30 +87,51 @@ Resources:
       Name: 'vector-store'
       Type: 'VECTORSEARCH'
 
-  OpenSearchAccessPolicy:
-    Type: AWS::OpenSearchServerless::AccessPolicy
+  OpenSearchEncryptionPolicy:
+    Type: AWS::OpenSearchServerless::SecurityPolicy
     Properties:
-      Name: 'vector-store-access-policy'
+      Name: 'vector-store-encryption-policy'
+      Type: 'encryption'
       Policy: !Sub |
         {
-          "Version": "2012-10-17",
-          "Statement": [
+          "Rules": [
             {
-              "Sid": "EnableAccess",
-              "Effect": "Allow",
-              "Action": [
+              "ResourceType": "collection",
+              "Resource": [
+                "arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/vector-store"
+              ]
+            }
+          ]
+        }
+
+  OpenSearchAccessPolicy:
+    Type: AWS::OpenSearchServerless::SecurityPolicy
+    Properties:
+      Name: 'vector-store-access-policy'
+      Type: 'data'
+      Policy: !Sub |
+        {
+          "Rules": [
+            {
+              "ResourceType": "collection",
+              "Resource": [
+                "arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/vector-store/*"
+              ],
+              "Permission": [
                 "aoss:CreateCollectionItems",
                 "aoss:DeleteCollectionItems",
                 "aoss:UpdateCollectionItems",
                 "aoss:DescribeCollectionItems",
                 "aoss:VectorSearch"
               ],
-              "Resource": "arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/vector-store/*",
-              "Principal": "*"
+              "Principal": [
+                {
+                  "AWS": "*"
+                }
+              ]
             }
           ]
         }
-      Type: 'data'
 
 Outputs:
   OpenSearchEndpoint:
