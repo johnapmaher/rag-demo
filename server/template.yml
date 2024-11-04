@@ -66,6 +66,7 @@ Resources:
       Timeout: 30
       Environment:
         Variables:
+          S3_BUCKET_NAME: !Ref UploadBucket
           OPENSEARCH_ENDPOINT: !GetAtt Collection.CollectionEndpoint
       Events:
         DynamoDBStream:
