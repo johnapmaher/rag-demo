@@ -64,6 +64,9 @@ Resources:
       Runtime: python3.10
       MemorySize: 512
       Timeout: 30
+      Environment:
+        Variables:
+          OPENSEARCH_ENDPOINT: !GetAtt OpenSearchCollection.CollectionEndpoint
       Events:
         DynamoDBStream:
           Type: DynamoDB
@@ -75,8 +78,41 @@ Resources:
         - Statement:
             Effect: Allow
             Action:
-              - dynamodb:DescribeStream
-              - dynamodb:GetRecords
-              - dynamodb:GetShardIterator
-              - dynamodb:ListStreams
-            Resource: !GetAtt SessionsTable.StreamArn
+              - 'aoss:APIAccessAll'
+            Resource: '*'
+
+  OpenSearchCollection:
+    Type: AWS::OpenSearchServerless::Collection
+    Properties:
+      Name: 'vector-store'
+      Type: 'VECTORSEARCH'
+
+  OpenSearchAccessPolicy:
+    Type: AWS::OpenSearchServerless::AccessPolicy
+    Properties:
+      Name: 'vector-store-access-policy'
+      Policy: !Sub |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "EnableAccess",
+              "Effect": "Allow",
+              "Action": [
+                "aoss:CreateCollectionItems",
+                "aoss:DeleteCollectionItems",
+                "aoss:UpdateCollectionItems",
+                "aoss:DescribeCollectionItems",
+                "aoss:VectorSearch"
+              ],
+              "Resource": "arn:aws:aoss:${AWS::Region}:${AWS::AccountId}:collection/vector-store/*",
+              "Principal": "*"
+            }
+          ]
+        }
+      Type: 'data'
+
+Outputs:
+  OpenSearchEndpoint:
+    Description: 'OpenSearch Serverless endpoint'
+    Value: !GetAtt OpenSearchCollection.CollectionEndpoint
