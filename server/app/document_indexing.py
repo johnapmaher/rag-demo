@@ -63,7 +63,10 @@ def index_document(document_content):
     )
     
     # Index the documents
-    vector_store.add_documents(docs)
+    vector_store.add_documents(
+        documents = docs,
+        vector_field = 'uploads_vector',
+                                )
 
 @logger.inject_lambda_context
 def handler(event, context):
@@ -77,7 +80,7 @@ def handler(event, context):
         },
         "mappings": {
             "properties": {
-            "osha_vector": {
+            "uploads_vector": {
                 "type": "knn_vector",
                 "dimension": 1536,
                 "method": {

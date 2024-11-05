@@ -1,5 +1,6 @@
 import os
 import logging
+import boto3
 from dotenv import load_dotenv
 from aws_lambda_powertools import Logger
 from langchain_community.vectorstores import OpenSearchVectorSearch
@@ -41,12 +42,9 @@ def handler(event, context):
     query = event.get("query")
     logger.info(f"Extracted query: {query}")
     
-    # Initialize OpenSearch client
-    client = get_opensearch_client()
-    
     # Initialize OpenAI embeddings
-    embeddings = OpenAIEmbeddings(api_key=openai_api_key)
-    
+    embeddings = OpenAIEmbeddings(api_key=os.getenv('OPENAI_API_KEY'))
+
     # Initialize OpenSearch vector store
     vector_store = OpenSearchVectorSearch(
         embedding_function=embeddings,
@@ -61,7 +59,13 @@ def handler(event, context):
     
     # Set up retriever from OpenSearch index and run RAG pipeline
     logger.info("Setting up retriever from OpenSearch index")
-    retriever = vector_store.as_retriever()
+    docs = vector_store.similarity_search_by_vector(
+            "What is the standard height where fall protection is required?",
+            vector_field="uploads_vector",
+            text_field="text",
+            metadata_field="metadata",
+            )
+
     
     logger.info("Initializing RetrievalQA chain")
     qa_chain = RetrievalQA.from_chain_type(
