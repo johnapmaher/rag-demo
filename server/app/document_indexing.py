@@ -14,12 +14,11 @@ load_dotenv()
 s3 = boto3.client('s3')
 logger = Logger()
 
+bucket_name = os.environ.get("S3_BUCKET_NAME")
 host = os.getenv('OPENSEARCH_ENDPOINT').replace('https://', '')
 region = 'us-east-1'
-service = 'es'
-bucket_name = os.environ.get("S3_BUCKET_NAME")
+service = 'aoss'
 credentials = boto3.Session().get_credentials()
-credentials = credentials.get_frozen_credentials()
 auth = AWSV4SignerAuth(credentials, region, service)
 
 def get_opensearch_client():
