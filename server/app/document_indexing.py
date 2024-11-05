@@ -1,6 +1,5 @@
 import boto3
 from aws_lambda_powertools import Logger
-from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import  OpenSearchVectorSearch
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter
@@ -20,11 +19,8 @@ def read_document_from_s3(bucket_name, document_key):
     return document_content
 
 def index_document(document_content):
-    loader = TextLoader(document_content)
-    
-    documents = loader.load()
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    docs = text_splitter.split_documents(documents)
+    docs = text_splitter.split_documents(document_content)
     # Initialize OpenAI embeddings
     embeddings = OpenAIEmbeddings(api_key=os.getenv('OPENAI_API_KEY'))
 
