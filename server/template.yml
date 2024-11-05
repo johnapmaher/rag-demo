@@ -63,6 +63,28 @@ Resources:
             Method: post
             RestApiId: !Ref ApiGateway
 
+  QueryDocumentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.rag_query.handler
+      Runtime: python3.10
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          OPENAI_API_KEY: !Ref OpenAIAPIKey
+          DYNAMODB_TABLE_NAME: !Ref SessionsTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SessionsTable
+      Events:
+        UploadAPI:
+          Type: Api
+          Properties:
+            Path: /query
+            Method: post
+            RestApiId: !Ref ApiGateway
+
   DocumentIndexingFunctionRole:
     Type: 'AWS::IAM::Role'
     Properties:
