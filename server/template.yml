@@ -1,6 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
+
+Parameters:
+  OpenAIAPIKey:
+    Type: String
+    Description: "OpenAI API Key"
+
 Resources:
   UploadBucket:
     Type: AWS::S3::Bucket
@@ -68,6 +74,7 @@ Resources:
         Variables:
           S3_BUCKET_NAME: !Ref UploadBucket
           OPENSEARCH_ENDPOINT: !GetAtt Collection.CollectionEndpoint
+          OPENAI_API_KEY: !Ref OpenAIAPIKey
       Events:
         DynamoDBStream:
           Type: DynamoDB

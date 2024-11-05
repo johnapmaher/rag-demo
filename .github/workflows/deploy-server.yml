@@ -44,6 +44,7 @@ jobs:
         working-directory: ./server
         env:
           STACK_NAME: rag-app
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           sam deploy \
             --stack-name $STACK_NAME \
@@ -52,3 +53,4 @@ jobs:
             --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_NAMED_IAM \
             --region us-east-1
+            --parameter-overrides OpenAIAPIKey=$OPENAI_API_KEY
