@@ -5,8 +5,9 @@ from dotenv import load_dotenv
 from aws_lambda_powertools import Logger
 from langchain_community.vectorstores import OpenSearchVectorSearch
 from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.chains import RetrievalQA
-from langchain_community.llms import OpenAI
+from langchain.llms import OpenAI
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
 from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth, exceptions as opensearch_exceptions
 
 # Load environment variables from .env file
@@ -65,21 +66,27 @@ def handler(event, context):
             text_field="text",
             metadata_field="metadata",
             )
+    
+    docs_dict = [{"page_content": doc.page_content, "metadata": doc.metadata} for doc in docs]
+    data = ""
+    for doc in docs_dict:
+        data += doc['page_content'] + "\n\n"
 
     
-    logger.info("Initializing RetrievalQA chain")
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=OpenAI(api_key=openai_api_key),
-        chain_type="stuff",
-        retriever=retriever
+    llm = OpenAI()
+    prompt = PromptTemplate(
+    input_variables=["question", "data"],
+    template="""Using the data below, answer the question provided.
+    question: {question}
+    data: {data}
+    """,
     )
-    
-    # Run the query and return the generated response
-    logger.info("Running query through the QA chain")
-    response = qa_chain.run(query)
-    logger.info("Query executed successfully")
+
+
+    chain = LLMChain(llm=llm, prompt=prompt)
+    llm_return_data = chain.run({'question': query, 'data': data})
     
     return {
         'statusCode': 200,
-        'body': response
+        'body': llm_return_data
     }
