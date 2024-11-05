@@ -4,7 +4,7 @@ from langchain_community.vectorstores import  OpenSearchVectorSearch
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter
 from langchain.schema import Document
-from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth
+from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth, exceptions as opensearch_exceptions
 
 from dotenv import load_dotenv
 import os
@@ -89,9 +89,21 @@ def handler(event, context):
             }
         }
         }
+    
+    index_name = 'aoss-index'
 
-    response = client.indices.create('aoss-index', body=index_body)
-    logger.debug("Index creation response: %s", response)
+    try:
+        if not client.indices.exists(index=index_name):
+            response = client.indices.create(index=index_name, body=index_body)
+            logger.debug("Index creation response: %s", response)
+        else:
+            logger.info(f"Index '{index_name}' already exists.")
+    except opensearch_exceptions.RequestError as e:
+        if e.error == 'resource_already_exists_exception':
+            logger.info(f"Index '{index_name}' already exists. Skipping creation.")
+        else:
+            logger.error(f"Failed to create index '{index_name}': {e.info}")
+            raise
     
     for record in event['Records']:
         if record['eventName'] == 'INSERT':
