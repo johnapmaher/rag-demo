@@ -32,7 +32,7 @@ def index_document(document_content):
     )
 
     # Index the document
-    vector_store.index_document(document_content)
+    vector_store.add_texts(docs)
 
 @logger.inject_lambda_context
 def handler(event, context):
