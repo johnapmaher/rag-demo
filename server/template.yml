@@ -154,7 +154,7 @@ Resources:
     Type: 'AWS::OpenSearchServerless::Collection'
     Properties:
       Name: quickstart
-      Type: TIMESERIES
+      Type: VECTORSEARCH
       Description: Collection to holds timeseries data
     DependsOn: EncryptionPolicy
 
