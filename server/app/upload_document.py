@@ -95,6 +95,11 @@ def handler(event, context):
 
         return {
             'statusCode': 200,
+            'headers': {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Headers': 'Content-Type, file-name, session-id',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        },
             'body': json.dumps({'message': 'File uploaded successfully', 'sessionId': session_id})
         }
 
