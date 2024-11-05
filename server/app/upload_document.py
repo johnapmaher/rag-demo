@@ -1,16 +1,13 @@
+import os
 import boto3
 import json
-import os
+import base64
 import uuid
-from botocore.exceptions import NoCredentialsError, ClientError
+from datetime import datetime, timezone
 from aws_lambda_powertools import Logger
-from dotenv import load_dotenv
-from datetime import datetime, timedelta
+from requests_toolbelt.multipart import decoder
 
-load_dotenv()
-
-logger = Logger(level="DEBUG")
-
+logger = Logger()
 s3_client = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 
@@ -25,25 +22,53 @@ else:
 def handler(event, context):
     try:
         logger.info("Received upload request")
-        # logger.debug(f"Event: {event}")
+        logger.debug(f"Event: {event}")
 
-        # Extract file information from the event
+        # Extract headers and body from the event
         headers = {k.lower(): v for k, v in event['headers'].items()}
-        logger.debug(f"Headers: {headers}")
-        file_name = headers.get('file-name')
-        file_content = event['body']
-        session_id = headers.get('session-id')
+        content_type = headers.get('content-type')
+        logger.debug(f"Content-Type: {content_type}")
+
+        body = event.get('body', '')
+        if event.get('isBase64Encoded', False):
+            body = base64.b64decode(body)
+        else:
+            body = body.encode('utf-8')
+
+        # Use MultipartDecoder to parse the multipart/form-data
+        multipart_data = decoder.MultipartDecoder(body, content_type)
+
+        # Initialize file variables
+        file_name = None
+        file_content = None
+
+        # Extract the file from multipart data
+        for part in multipart_data.parts:
+            content_disposition = part.headers.get(b'Content-Disposition', b'').decode()
+            if 'filename=' in content_disposition:
+                # Extract the file name
+                filename_index = content_disposition.find('filename=')
+                file_name = content_disposition[filename_index + 9:].strip('"; ')
+                file_content = part.content
+                break
+
+        if not file_name or not file_content:
+            logger.error("No file found in the uploaded data")
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'message': 'No file uploaded'})
+            }
 
         # Upload the file to S3
         logger.info(f"Uploading file {file_name} to S3 bucket {s3_bucket_name}")
         s3_client.put_object(Bucket=s3_bucket_name, Key=file_name, Body=file_content)
-
         logger.info(f"File {file_name} uploaded successfully to S3 bucket {s3_bucket_name}")
-        
+
         # Store session data in DynamoDB
         table = dynamodb.Table(os.environ['DYNAMODB_TABLE_NAME'])
         logger.info(f"DynamoDB table: {table.name}")
 
+        session_id = headers.get('session-id')
         if session_id:
             # Update existing session record
             logger.info(f"Updating session {session_id} with new file reference")
@@ -56,52 +81,26 @@ def handler(event, context):
                 }
             )
         else:
-            # Generate a new session ID
+            # Create a new session record
             session_id = str(uuid.uuid4())
-            expiration_time = int((datetime.utcnow() + timedelta(hours=1)).timestamp())
-            logger.info(f"Creating new session {session_id}")
-
+            logger.info(f"Creating new session with ID {session_id}")
             table.put_item(
                 Item={
                     'sessionId': session_id,
                     'files': [file_name],
                     'uploadedAt': datetime.utcnow().isoformat(),
-                    'expiresAt': expiration_time
+                    'expiresAt': int(datetime.now(tz=timezone.utc).timestamp() + 3600)  # Expires in 1 hour
                 }
             )
 
-        response_body = {
-            "message": f"File {file_name} uploaded successfully.",
-            "sessionId": session_id
-        }
-
         return {
-            "statusCode": 200,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, file-name"
-            },
-            "body": json.dumps(response_body)
-        }
-
-    except NoCredentialsError:
-        logger.error("Credentials not available")
-        return {
-            "statusCode": 500,
-            "body": "Credentials not available"
-        }
-
-    except ClientError as e:
-        logger.error(f"Client error: {e}")
-        return {
-            "statusCode": 500,
-            "body": f"Client error: {e}"
+            'statusCode': 200,
+            'body': json.dumps({'message': 'File uploaded successfully', 'sessionId': session_id})
         }
 
     except Exception as e:
-        logger.error(f"Error processing file upload: {e}")
+        logger.exception("Error processing the upload")
         return {
-            "statusCode": 500,
-            "body": f"Error processing file upload: {e}"
+            'statusCode': 500,
+            'body': json.dumps({'message': 'Error uploading file', 'error': str(e)})
         }
