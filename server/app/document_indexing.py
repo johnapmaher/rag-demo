@@ -4,6 +4,7 @@ from langchain_community.vectorstores import  OpenSearchVectorSearch
 from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter
 from langchain.schema import Document
+from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth
 
 from dotenv import load_dotenv
 import os
@@ -14,6 +15,43 @@ s3 = boto3.client('s3')
 logger = Logger()
 
 bucket_name = os.environ.get("S3_BUCKET_NAME")
+
+host = os.getenv('OPENSEARCH_ENDPOINT')
+region = 'us-east-1'
+service = 'es'
+credentials = boto3.Session().get_credentials()
+auth = AWSV4SignerAuth(credentials, region, service)
+
+client = OpenSearch(
+    hosts = [{'host': host, 'port': 443}],
+    http_auth = auth,
+    use_ssl = True,
+    verify_certs = True,
+    connection_class = RequestsHttpConnection,
+    pool_maxsize = 20
+)
+
+index_body = {
+  'settings': {
+    "index.knn": True
+  },
+  "mappings": {
+    "properties": {
+      "osha_vector": {
+        "type": "knn_vector",
+        "dimension": 1536,
+        "method": {
+          "engine": "faiss",
+          "name": "hnsw",
+          "space_type": "l2"
+        }
+      }
+    }
+  }
+}
+
+
+response = client.indices.create('aoss-index', body=index_body)
 
 def read_document_from_s3(bucket_name, document_key):
     response = s3.get_object(Bucket=bucket_name, Key=document_key)
@@ -35,9 +73,14 @@ def index_document(document_content):
     
     # Initialize OpenSearch vector store
     vector_store = OpenSearchVectorSearch(
-        opensearch_url=os.getenv('OPENSEARCH_ENDPOINT'),
-        index_name='documents',
         embedding_function=embeddings
+        index_name='aoss-index',
+        http_auth=auth,
+        use_ssl=True,
+        verify_certs=True,
+        http_compress=True,
+        connection_class=RequestsHttpConnection,
+        opensearch_url=os.getenv('OPENSEARCH_ENDPOINT'),
     )
     
     # Index the documents
