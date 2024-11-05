@@ -35,9 +35,9 @@ def index_document(document_content):
     
     # Initialize OpenSearch vector store
     vector_store = OpenSearchVectorSearch(
-        endpoint=os.getenv('OPENSEARCH_ENDPOINT'),
+        opensearch_url=os.getenv('OPENSEARCH_ENDPOINT'),
         index_name='documents',
-        embedding=embeddings
+        embedding_function=embeddings
     )
     
     # Index the documents
