@@ -6,6 +6,7 @@ from botocore.exceptions import NoCredentialsError, ClientError
 from aws_lambda_powertools import Logger
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+from requests_toolbelt.multipart import decoder
 
 load_dotenv()
 
@@ -31,7 +32,7 @@ def handler(event, context):
         headers = {k.lower(): v for k, v in event['headers'].items()}
         logger.debug(f"Headers: {headers}")
         file_name = headers.get('file-name')
-        file_content = event['body']
+        file_content = decoder.MultipartDecoder.from_response(event['body'])
         session_id = headers.get('session-id')
 
         # Upload the file to S3
