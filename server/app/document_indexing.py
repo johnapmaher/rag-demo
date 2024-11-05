@@ -19,26 +19,16 @@ bucket_name = os.environ.get("S3_BUCKET_NAME")
 host = os.getenv('OPENSEARCH_ENDPOINT')
 region = 'us-east-1'
 service = 'es'
-def get_credentials():
-    try:
-        # Create a session using boto3
-        session = boto3.Session()
-        logger.debug("Boto3 session created successfully.")
 
-        # Retrieve credentials
-        credentials = session.get_credentials()
-        logger.debug("Credentials retrieved: %s", credentials)
+session = boto3.Session()
+logger.debug("Boto3 session created successfully.")
 
-        # Get the actual credentials
-        credentials = credentials.get_frozen_credentials()
-        logger.debug("Frozen credentials: %s", credentials)
+credentials = session.get_credentials()
+logger.debug("Credentials retrieved: %s", credentials)
+credentials = credentials.get_frozen_credentials()
+logger.debug("Frozen credentials: %s", credentials)
 
-        return credentials
-    except Exception as e:
-        logger.error("Error retrieving credentials: %s", e)
-        raise
-
-auth = AWSV4SignerAuth(get_credentials, region, service)
+auth = AWSV4SignerAuth(credentials, region, service)
 
 client = OpenSearch(
     hosts = [{'host': host, 'port': 443}],
