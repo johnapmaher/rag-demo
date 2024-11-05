@@ -6,5 +6,6 @@ langchain
 langchain-community
 langchain-openai
 openai
+opensearch-py
 python-dotenv
 requests_toolbelt
