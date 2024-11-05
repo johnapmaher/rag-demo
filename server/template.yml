@@ -86,6 +86,13 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource: !Sub 'arn:aws:s3:::${UploadBucket}/*'
+              - Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource: !GetAtt SessionsTable.StreamArn
 
   DocumentIndexingFunction:
     Type: AWS::Serverless::Function
