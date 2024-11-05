@@ -51,5 +51,5 @@ jobs:
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_NAMED_IAM \
-            --region us-east-1
+            --region us-east-1 \
             --parameter-overrides OpenAIAPIKey="${{ secrets.OPENAI_API_KEY }}"
