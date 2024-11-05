@@ -63,6 +63,30 @@ Resources:
             Method: post
             RestApiId: !Ref ApiGateway
 
+  DocumentIndexingFunctionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: DocumentIndexingFunctionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'aoss:APIAccessAll'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource: !Sub 'arn:aws:s3:::${UploadBucket}/*'
+
   DocumentIndexingFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -82,17 +106,7 @@ Resources:
             Stream: !GetAtt SessionsTable.StreamArn
             BatchSize: 100
             StartingPosition: TRIM_HORIZON
-      Policies:
-        - Statement:
-            Effect: Allow
-            Action:
-              - 'aoss:APIAccessAll'
-            Resource: '*'
-        - Statement:
-            Effect: Allow
-            Action:
-              - s3:GetObject
-            Resource: !Sub 'arn:aws:s3:::${UploadBucket}/*'
+      Role: !GetAtt DocumentIndexingFunctionRole.Arn
 
   IAMUSer:
     Type: 'AWS::IAM::User'
@@ -108,7 +122,8 @@ Resources:
       Policy: !Sub >-
         [{"Description":"Access for cfn user","Rules":[{"ResourceType":"index","Resource":["index/*/*"],"Permission":["aoss:*"]},
         {"ResourceType":"collection","Resource":["collection/quickstart"],"Permission":["aoss:*"]}],
-        "Principal":["arn:aws:iam::${AWS::AccountId}:user/aossadmin"]}]
+        "Principal":["arn:aws:iam::${AWS::AccountId}:user/aossadmin",
+                     "arn:aws:iam::${AWS::AccountId}:role/${DocumentIndexingFunctionRole}"]}]
 
   NetworkPolicy:
     Type: 'AWS::OpenSearchServerless::SecurityPolicy'
